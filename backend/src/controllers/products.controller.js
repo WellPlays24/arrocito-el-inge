@@ -7,8 +7,8 @@ async function getAllProducts(req, res) {
     const includeInactive = req.query.includeInactive === 'true';
 
     const sql = includeInactive
-      ? 'SELECT id, name, description, price, is_active, image_url, created_at, updated_at FROM products ORDER BY id'
-      : 'SELECT id, name, description, price, is_active, image_url, created_at, updated_at FROM products WHERE is_active = TRUE ORDER BY id';
+      ? 'SELECT id, name, description, price, category, is_active, image_url, created_at, updated_at FROM products ORDER BY id'
+      : 'SELECT id, name, description, price, category, is_active, image_url, created_at, updated_at FROM products WHERE is_active = TRUE ORDER BY id';
 
     const result = await db.query(sql);
     return res.json(result.rows);
@@ -24,7 +24,7 @@ async function getProductById(req, res) {
     const { id } = req.params;
 
     const result = await db.query(
-      'SELECT id, name, description, price, is_active, image_url, created_at, updated_at FROM products WHERE id = $1',
+      'SELECT id, name, description, price, category, is_active, image_url, created_at, updated_at FROM products WHERE id = $1',
       [id]
     );
 
@@ -42,18 +42,19 @@ async function getProductById(req, res) {
 // POST /api/products  -> crear un nuevo producto
 async function createProduct(req, res) {
   try {
-    const { name, description, price, is_active, image_url } = req.body;
+    const { name, description, price, category, is_active, image_url } = req.body;
 
     if (!name || price == null) {
       return res.status(400).json({ message: 'name y price son obligatorios' });
     }
 
     const result = await db.query(
-      `INSERT INTO products (name, description, price, is_active, image_url)
-       VALUES ($1, $2, $3, COALESCE($4, TRUE), $5)
-       RETURNING id, name, description, price, is_active, image_url, created_at, updated_at`,
-      [name, description || null, price, is_active, image_url || null]
+      `INSERT INTO products (name, description, price, category, image_url, is_active)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, name, description, price, category, image_url, is_active, created_at, updated_at`,
+      [name, description || null, price, category || null, image_url || null, is_active ?? true]
     );
+
 
     return res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -66,7 +67,7 @@ async function createProduct(req, res) {
 async function updateProduct(req, res) {
   try {
     const { id } = req.params;
-    const { name, description, price, is_active, image_url } = req.body;
+    const { name, description, price, category, is_active, image_url } = req.body;
 
     // Opcional: validar que no vengan campos obligatorios vacíos
     if (!name || price == null) {
@@ -75,16 +76,19 @@ async function updateProduct(req, res) {
 
     const result = await db.query(
       `UPDATE products
-       SET name = $1,
-           description = $2,
-           price = $3,
-           is_active = COALESCE($4, is_active),
-           image_url = $5,
-           updated_at = NOW()
-       WHERE id = $6
-       RETURNING id, name, description, price, is_active, image_url, created_at, updated_at`,
-      [name, description || null, price, is_active, image_url || null, id]
+        SET
+          name = COALESCE($1, name),
+          description = COALESCE($2, description),
+          price = COALESCE($3, price),
+          category = COALESCE($4, category),
+          image_url = COALESCE($5, image_url),
+          is_active = COALESCE($6, is_active),
+          updated_at = NOW()
+      WHERE id = $7
+      RETURNING id, name, description, price, category, image_url, is_active, created_at, updated_at`,
+      [name, description, price, category, image_url, is_active, id]
     );
+
 
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Producto no encontrado' });

@@ -1,0 +1,172 @@
+<div class="min-h-screen bg-slate-900 p-4">
+  <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-xl p-6 space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <h1 class="text-2xl font-bold text-slate-800">
+        Productos
+      </h1>
+
+      <button
+        class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
+        type="button"
+        (click)="toggleForm()"
+      >
+        {{ showForm ? 'Cancelar' : '+ Nuevo producto' }}
+      </button>
+    </div>
+
+    <!-- Formulario nuevo/editar producto -->
+    <div *ngIf="showForm" class="border rounded-lg p-4 bg-slate-50 space-y-4">
+      <h2 class="text-lg font-semibold text-slate-700">
+        {{ editing ? 'Editar producto' : 'Nuevo producto' }}
+      </h2>
+
+      <div class="grid sm:grid-cols-2 gap-4">
+
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Nombre</label>
+          <input
+            type="text"
+            [(ngModel)]="newProduct.name"
+            name="name"
+            class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Categoría</label>
+          <input
+            type="text"
+            [(ngModel)]="newProduct.category"
+            name="category"
+            placeholder="ej: plato, bebida..."
+            class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Precio</label>
+          <input
+            type="number"
+            step="0.01"
+            [(ngModel)]="newProduct.price"
+            name="price"
+            class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div class="flex items-center gap-2 mt-6">
+          <input
+            type="checkbox"
+            [(ngModel)]="newProduct.is_active"
+            name="is_active"
+            class="h-4 w-4"
+          />
+          <span class="text-sm text-slate-700">Activo</span>
+        </div>
+
+      </div>
+
+      <div>
+        <label class="block text-sm text-slate-600 mb-1">Descripción</label>
+        <textarea
+          [(ngModel)]="newProduct.description"
+          name="description"
+          rows="2"
+          class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+        ></textarea>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          class="px-4 py-2 rounded-lg border text-sm"
+          (click)="toggleForm()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="px-4 py-2 rounded-lg bg-green-600 text-white text-sm hover:bg-green-700 disabled:opacity-60"
+          [disabled]="saving"
+          (click)="saveProduct()"
+        >
+          {{ saving ? 'Guardando...' : (editing ? 'Actualizar' : 'Guardar') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Mensajes -->
+    <div *ngIf="errorMessage" class="text-center text-red-500 py-2">
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="loading" class="text-center text-slate-500 py-6">
+      Cargando productos...
+    </div>
+
+    <!-- Tabla -->
+    <div *ngIf="!loading && products.length > 0" class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="bg-slate-100 text-left text-slate-600">
+            <th class="px-4 py-2">Nombre</th>
+            <th class="px-4 py-2">Categoría</th>
+            <th class="px-4 py-2">Precio</th>
+            <th class="px-4 py-2">Estado</th>
+            <th class="px-4 py-2 text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let p of products"
+            class="border-t hover:bg-slate-50"
+          >
+            <td class="px-4 py-2 font-medium text-slate-800">
+              {{ p.name }}
+            </td>
+            <td class="px-4 py-2">
+              {{ p.category || '—' }}
+            </td>
+            <td class="px-4 py-2">
+              $ {{ p.price | number : '1.2-2' }}
+            </td>
+            <td class="px-4 py-2">
+              <span
+                class="px-2 py-1 rounded-full text-xs font-semibold"
+                [ngClass]="p.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+              >
+                {{ p.is_active ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td class="px-4 py-2">
+              <div class="flex justify-end gap-2">
+                <button
+                  type="button"
+                  class="px-3 py-1 rounded-lg border text-xs text-slate-700 hover:bg-slate-100"
+                  (click)="editProduct(p)"
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  class="px-3 py-1 rounded-lg bg-red-600 text-white text-xs hover:bg-red-700"
+                  (click)="deleteProduct(p)"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!loading && products.length === 0" class="text-center text-slate-500 py-6">
+      No hay productos registrados.
+    </div>
+
+  </div>
+</div>

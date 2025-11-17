@@ -1,10 +1,57 @@
-<div class="min-h-screen flex items-center justify-center bg-slate-900">
-  <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
-    <h1 class="text-2xl font-bold mb-4 text-slate-800">
-      Arroz con Pollo Admin
-    </h1>
-    <p class="text-slate-600">
-      Si ves esto centrado con fondo oscuro, Tailwind está funcionando ✅
-    </p>
+<!-- Login: pantalla completa sin layout -->
+<div *ngIf="isLoginPage">
+  <router-outlet></router-outlet>
+</div>
+
+<!-- Layout admin para todo lo demás -->
+<div *ngIf="!isLoginPage" class="min-h-screen bg-slate-900 flex">
+
+  <!-- Sidebar (visible en md+ ) -->
+  <aside class="hidden md:flex md:flex-col w-60 bg-slate-950 text-slate-100">
+    <div class="px-4 py-4 text-lg font-bold border-b border-slate-800">
+      El Inge - Admin
+    </div>
+    <nav class="flex-1 px-2 py-4 space-y-1 text-sm">
+      <a
+        routerLink="/products"
+        routerLinkActive="bg-slate-800"
+        class="block px-3 py-2 rounded-lg hover:bg-slate-800"
+      >
+        Productos
+      </a>
+      <!-- aquí luego añadimos:
+           Complementos, Pedidos, Fiados, etc. -->
+       
+           
+
+
+    </nav>
+
+    <!-- botón logout en sidebar -->
+        <div class="px-4 py-3 border-t border-slate-800">
+          <button
+            type="button"
+            (click)="logout()"
+            class="w-full text-left px-3 py-2 rounded-lg text-sm bg-red-600 hover:bg-red-700 text-white"
+          >
+            Cerrar sesión
+          </button>
+        </div>
+
+  </aside>
+
+  <!-- Contenedor principal -->
+  <div class="flex-1 flex flex-col">
+
+    <!-- Topbar móvil (sidebar se oculta) -->
+    <header class="md:hidden bg-slate-950 text-slate-100 px-4 py-3 flex items-center justify-between">
+      <span class="font-semibold">El Inge - Admin</span>
+      <!-- Aquí luego podemos poner un botón de menú si quieres -->
+    </header>
+
+    <!-- Contenido -->
+    <main class="flex-1 p-4">
+      <router-outlet></router-outlet>
+    </main>
   </div>
 </div>

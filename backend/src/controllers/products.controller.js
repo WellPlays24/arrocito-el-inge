@@ -2,13 +2,15 @@
 const db = require('../db');
 
 // GET /api/products  -> listar todos los productos (opción de incluir inactivos)
+// GET /api/products  → clientes / público
 async function getAllProducts(req, res) {
   try {
-    const includeInactive = req.query.includeInactive === 'true';
-
-    const sql = includeInactive
-      ? 'SELECT id, name, description, price, category, is_active, image_url, created_at, updated_at FROM products ORDER BY id'
-      : 'SELECT id, name, description, price, category, is_active, image_url, created_at, updated_at FROM products WHERE is_active = TRUE ORDER BY id';
+    const sql = `
+      SELECT id, name, description, price, category, is_active, image_url, created_at, updated_at
+      FROM products
+      WHERE is_active = TRUE
+      ORDER BY id
+    `;
 
     const result = await db.query(sql);
     return res.json(result.rows);
@@ -17,6 +19,31 @@ async function getAllProducts(req, res) {
     return res.status(500).json({ message: 'Error al obtener productos' });
   }
 }
+
+// GET /api/products/admin  → solo admin
+async function getAllProductsAdmin(req, res) {
+  try {
+    const includeInactive = req.query.includeInactive === 'true';
+
+    let sql = `
+      SELECT id, name, description, price, category, is_active, image_url, created_at, updated_at
+      FROM products
+    `;
+
+    if (!includeInactive) {
+      sql += ' WHERE is_active = TRUE';
+    }
+
+    sql += ' ORDER BY id';
+
+    const result = await db.query(sql);
+    return res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener productos (admin):', error);
+    return res.status(500).json({ message: 'Error al obtener productos' });
+  }
+}
+
 
 // GET /api/products/:id  -> obtener un solo producto por id
 async function getProductById(req, res) {
@@ -127,9 +154,4 @@ async function deleteProduct(req, res) {
 }
 
 module.exports = {
-  getAllProducts,
-  getProductById,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-};
+  getAllProducts, getAllProductsAdmin, getProductById, createProduct, updateProduct, deleteProduct};

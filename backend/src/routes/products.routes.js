@@ -1,16 +1,8 @@
 // src/routes/products.routes.js
 const express = require('express');
-const {
-  getAllProducts,
-  getProductById,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-} = require('../controllers/products.controller');
-const {
-  authRequired,
-  roleRequired,
-} = require('../middleware/auth.middleware');
+const { getAllProducts,getAllProductsAdmin, getProductById,
+        createProduct,  updateProduct,  deleteProduct } = require('../controllers/products.controller');
+const {  authRequired,  roleRequired} = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
@@ -21,6 +13,9 @@ router.get('/', getAllProducts);
 // Obtener un producto por id
 // GET /api/products/:id
 router.get('/:id', getProductById);
+
+// ADMIN: puede ver todo, requiere token + rol admin
+router.get('/admin/list',authRequired,roleRequired('admin'),getAllProductsAdmin);
 
 // Crear un nuevo producto
 // POST /api/products

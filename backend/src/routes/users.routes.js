@@ -1,13 +1,7 @@
 // src/routes/users.routes.js
 const express = require('express');
-const {
-  getAllUsers,
-  getUserById,
-  createUser,
-  updateUser,
-  deleteUser,
-} = require('../controllers/users.controller');
-const { authRequired, roleRequired } = require('../middleware/auth.middleware');
+const {getAllUsers, getUserById,createUser, updateUser, deleteUser} = require('../controllers/users.controller');
+const {authRequired, roleRequired} = require('../middleware/auth.middleware');
 
 
 const router = express.Router();

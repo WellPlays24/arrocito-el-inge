@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const { validarCedula } = require('../utils/validateCedula');
+const { validarNombre } = require('../utils/validateName');
 
 
 function generateToken(user) {
@@ -21,16 +22,27 @@ function generateToken(user) {
 }
 
 // POST /api/auth/register  (solo clientes)
-async function register(req, res) {
+async function register(req, res, next) {
   try {
     const { name, phone, email, password, cedula, date_of_birth } = req.body;
 
     if (cedula && !validarCedula(cedula)) {
-  return res.status(400).json({ message: 'La cédula no es válida' });
-}
+      const error = new Error('La cédula no es válida');
+      error.status = 400;
+      throw error;
+    }
+
+    // Validación de Nombre Real
+    if (name && !validarNombre(name)) {
+      const error = new Error('El nombre debe contener al menos nombre y apellido (ej: "Juan Perez") y solo letras.');
+      error.status = 400;
+      throw error;
+    }
 
     if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Faltan campos obligatorios' });
+      const error = new Error('Faltan campos obligatorios');
+      error.status = 400;
+      throw error;
     }
 
     const exists = await db.query(
@@ -39,7 +51,9 @@ async function register(req, res) {
     );
 
     if (exists.rowCount > 0) {
-      return res.status(400).json({ message: 'El email ya está registrado' });
+      const error = new Error('El email ya está registrado');
+      error.status = 400;
+      throw error;
     }
 
     if (cedula) {
@@ -48,7 +62,9 @@ async function register(req, res) {
         [cedula]
       );
       if (cedulaRes.rowCount > 0) {
-        return res.status(400).json({ message: 'La cédula ya está registrada' });
+        const error = new Error('La cédula ya está registrada');
+        error.status = 400;
+        throw error;
       }
     }
 
@@ -73,8 +89,7 @@ async function register(req, res) {
       user,
     });
   } catch (error) {
-    console.error('Error register:', error);
-    return res.status(500).json({ message: 'Error al registrar usuario' });
+    next(error);
   }
 }
 

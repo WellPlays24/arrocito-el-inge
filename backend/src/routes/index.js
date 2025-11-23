@@ -11,10 +11,7 @@ const usersRoutes = require('./users.routes');
 const dailyExpensesRoutes = require('./dailyExpenses.routes'); 
 const dailySummaryRoutes = require('./dailySummary.routes'); 
 
-
-
 const router = express.Router();
-
 
 router.use('/auth', authRoutes);
 router.use('/health', healthRoutes);

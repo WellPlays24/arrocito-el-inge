@@ -1,4 +1,3 @@
-
 /**
  * Valida un nombre completo basándose en varios criterios:
  * 1. Formato básico (al menos dos palabras separadas por espacios).
@@ -19,7 +18,7 @@ function validarNombre(nombre) {
     for (const palabra of palabras) {
         if (palabra.length > 15 || palabra.length < 2) return false;
     }
-    
+
     const repetidos = /(.)\1\1/;
     if (repetidos.test(nombreLimpio)) return false;
 

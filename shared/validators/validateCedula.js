@@ -1,4 +1,3 @@
-
 /**
  * Valida una cédula ecuatoriana basándose en varios criterios:
  * 1. Longitud exacta de 10 dígitos.

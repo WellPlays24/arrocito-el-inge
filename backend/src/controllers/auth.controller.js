@@ -4,8 +4,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const { validarCedula } = require('../utils/validateCedula');
-const { validarNombre } = require('../utils/validateName');
+const { validarCedula } = require('../../../shared/validators/validateCedula');
+const { validarNombre } = require('../../../shared/validators/validateName');
 
 
 function generateToken(user) {

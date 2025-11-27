@@ -158,7 +158,7 @@ const RegisterScreen = ({ navigation }) => {
                             style={[styles.input, errors.password && styles.inputError]}
                             placeholder="Mínimo 6 caracteres"
                             placeholderTextColor="#999"
-                            secureTextEntry
+                            secureTextEntry={true}
                             value={formData.password}
                             onChangeText={(value) => updateField('password', value)}
                         />

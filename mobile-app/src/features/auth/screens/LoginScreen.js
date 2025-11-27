@@ -65,7 +65,7 @@ const LoginScreen = ({ navigation }) => {
                         style={styles.input}
                         placeholder="********"
                         placeholderTextColor="#999"
-                        secureTextEntry
+                        secureTextEntry={true}
                         value={password}
                         onChangeText={setPassword}
                     />

@@ -51,17 +51,6 @@ const ProductsScreen = ({ navigation }) => {
                 <Text style={styles.greeting}>Hola! 👋</Text>
                 <Text style={styles.title}>¿Qué te gustaría ordenar?</Text>
             </View>
-            <TouchableOpacity
-                style={styles.cartButton}
-                onPress={() => navigation.navigate('Cart')}
-            >
-                <Text style={styles.cartIcon}>🛒</Text>
-                {getCartItemsCount() > 0 && (
-                    <View style={styles.badge}>
-                        <Text style={styles.badgeText}>{getCartItemsCount()}</Text>
-                    </View>
-                )}
-            </TouchableOpacity>
         </View>
     );
 

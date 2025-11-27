@@ -1,19 +1,33 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
     Image,
     TouchableOpacity,
     StyleSheet,
+    Dimensions,
 } from 'react-native';
 
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = (width - 48) / 2; // 2 columns with 16px padding on sides and 16px gap
+
 const ProductCard = ({ product, onAddToCart }) => {
+    const [imageError, setImageError] = useState(false);
+
+    // Placeholder image URL - using a data URI for a simple gray placeholder
+    const placeholderImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN89erVfwAI+wPkQDdGkAAAAABJRU5ErkJggg==';
+
     return (
         <View style={styles.card}>
             <Image
-                source={{ uri: product.image_url || 'https://via.placeholder.com/150' }}
+                source={
+                    imageError || !product.image_url
+                        ? { uri: placeholderImage }
+                        : { uri: product.image_url }
+                }
                 style={styles.image}
                 resizeMode="cover"
+                onError={() => setImageError(true)}
             />
             <View style={styles.content}>
                 <Text style={styles.name} numberOfLines={2}>
@@ -43,6 +57,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         borderRadius: 16,
         marginBottom: 16,
+        width: CARD_WIDTH,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -52,38 +67,41 @@ const styles = StyleSheet.create({
     },
     image: {
         width: '100%',
-        height: 150,
+        height: 120,
         backgroundColor: '#F3F4F6',
     },
     content: {
         padding: 12,
     },
     name: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: 'bold',
         color: '#1F2937',
         marginBottom: 4,
+        height: 36, // Fixed height for 2 lines
     },
     description: {
-        fontSize: 13,
+        fontSize: 12,
         color: '#6B7280',
         marginBottom: 8,
+        height: 32, // Fixed height for 2 lines
     },
     footer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        marginTop: 4,
     },
     price: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
         color: '#FF6B00',
     },
     addButton: {
         backgroundColor: '#FF6B00',
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: '#FF6B00',
@@ -94,8 +112,9 @@ const styles = StyleSheet.create({
     },
     addButtonText: {
         color: 'white',
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: 'bold',
+        lineHeight: 20,
     },
 });
 

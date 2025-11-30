@@ -9,12 +9,11 @@ import {
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2; // 2 columns with 16px padding on sides and 16px gap
+const CARD_WIDTH = (width - 48) / 2;
 
 const ProductCard = ({ product, onAddToCart }) => {
     const [imageError, setImageError] = useState(false);
 
-    // Placeholder image URL - using a data URI for a simple gray placeholder
     const placeholderImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN89erVfwAI+wPkQDdGkAAAAABJRU5ErkJggg==';
 
     return (
@@ -78,19 +77,18 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#1F2937',
         marginBottom: 4,
-        height: 36, // Fixed height for 2 lines
+        height: 36,
     },
     description: {
-        fontSize: 12,
+        fontSize: 11,
         color: '#6B7280',
         marginBottom: 8,
-        height: 32, // Fixed height for 2 lines
+        height: 28,
     },
     footer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginTop: 4,
     },
     price: {
         fontSize: 18,
@@ -98,10 +96,10 @@ const styles = StyleSheet.create({
         color: '#FF6B00',
     },
     addButton: {
-        backgroundColor: '#FF6B00',
         width: 32,
         height: 32,
         borderRadius: 16,
+        backgroundColor: '#FF6B00',
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: '#FF6B00',

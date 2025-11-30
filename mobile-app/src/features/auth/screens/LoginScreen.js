@@ -17,6 +17,7 @@ const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const { login } = useAuth();
 
     const handleLogin = async () => {
@@ -44,7 +45,7 @@ const LoginScreen = ({ navigation }) => {
                 style={styles.content}
             >
                 <View style={styles.header}>
-                    <Text style={styles.title}>Arrocito El Inge</Text>
+                    <Text style={styles.title}>Arrocito El Inge 🦎</Text>
                     <Text style={styles.subtitle}>Inicia sesión para ordenar</Text>
                 </View>
 
@@ -61,14 +62,24 @@ const LoginScreen = ({ navigation }) => {
                     />
 
                     <Text style={styles.label}>Contraseña</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="********"
-                        placeholderTextColor="#999"
-                        secureTextEntry={true}
-                        value={password}
-                        onChangeText={setPassword}
-                    />
+                    <View style={styles.passwordContainer}>
+                        <TextInput
+                            style={styles.passwordInput}
+                            placeholder="********"
+                            placeholderTextColor="#999"
+                            secureTextEntry={!showPassword}
+                            value={password}
+                            onChangeText={setPassword}
+                        />
+                        <TouchableOpacity
+                            onPress={() => setShowPassword(!showPassword)}
+                            style={styles.eyeIcon}
+                        >
+                            <Text style={styles.eyeText}>
+                                {showPassword ? '👁️' : '👁️‍🗨️'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
 
                     <TouchableOpacity
                         style={[styles.button, loading && styles.buttonDisabled]}
@@ -132,6 +143,28 @@ const styles = StyleSheet.create({
         color: '#374151',
         marginBottom: 8,
         marginTop: 16,
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F3F4F6',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    passwordInput: {
+        flex: 1,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        fontSize: 16,
+        color: '#1F2937',
+    },
+    eyeIcon: {
+        paddingRight: 12,
+        paddingLeft: 8,
+    },
+    eyeText: {
+        fontSize: 20,
     },
     input: {
         backgroundColor: '#F3F4F6',

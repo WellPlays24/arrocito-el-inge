@@ -41,6 +41,15 @@ const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
                 <Text style={styles.name} numberOfLines={2}>
                     {item.name}
                 </Text>
+                {item.complements && item.complements.length > 0 && (
+                    <View style={styles.complementsContainer}>
+                        {item.complements.map((complement, index) => (
+                            <Text key={index} style={styles.complementText}>
+                                • {complement.name}
+                            </Text>
+                        ))}
+                    </View>
+                )}
                 <Text style={styles.price}>${parseFloat(item.price).toFixed(2)}</Text>
             </View>
             <View style={styles.controls}>
@@ -100,6 +109,14 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#1F2937',
         marginBottom: 4,
+    },
+    complementsContainer: {
+        marginBottom: 4,
+    },
+    complementText: {
+        fontSize: 11,
+        color: '#FF6B00',
+        fontWeight: '500',
     },
     price: {
         fontSize: 14,

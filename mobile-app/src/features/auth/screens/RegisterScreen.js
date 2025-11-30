@@ -99,7 +99,7 @@ const RegisterScreen = ({ navigation }) => {
                     keyboardShouldPersistTaps="handled"
                 >
                     <View style={styles.header}>
-                        <Text style={styles.title}>Crear Cuenta</Text>
+                        <Text style={styles.title}>Crear Cuenta 🦎</Text>
                         <Text style={styles.subtitle}>Completa tus datos para registrarte</Text>
                     </View>
 

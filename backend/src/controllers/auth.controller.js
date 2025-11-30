@@ -17,9 +17,10 @@ function generateToken(user) {
       role: user.role,
     },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN }
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } // Por defecto 7 días
   );
 }
+
 
 // POST /api/auth/register  (solo clientes)
 async function register(req, res, next) {

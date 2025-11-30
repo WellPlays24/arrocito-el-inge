@@ -4,6 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import LoginScreen from '../features/auth/screens/LoginScreen';
 import RegisterScreen from '../features/auth/screens/RegisterScreen';
+import OrderConfirmationScreen from '../features/orders/screens/OrderConfirmationScreen';
+import OrderHistoryScreen from '../features/orders/screens/OrderHistoryScreen';
 import BottomTabNavigator from './BottomTabNavigator';
 import { useAuth } from '../context/AuthContext';
 
@@ -23,12 +25,27 @@ function AuthStack() {
     );
 }
 
+function MainStack() {
+    return (
+        <Stack.Navigator
+            screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: '#F9FAFB' },
+            }}
+        >
+            <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
+            <Stack.Screen name="OrderConfirmation" component={OrderConfirmationScreen} />
+            <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
+        </Stack.Navigator>
+    );
+}
+
 export default function AppNavigator() {
     const { isAuthenticated } = useAuth();
 
     return (
         <NavigationContainer>
-            {isAuthenticated() ? <BottomTabNavigator /> : <AuthStack />}
+            {isAuthenticated() ? <MainStack /> : <AuthStack />}
         </NavigationContainer>
     );
 }

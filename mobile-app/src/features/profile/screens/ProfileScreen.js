@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../../context/AuthContext';
 
-const ProfileScreen = () => {
+const ProfileScreen = ({ navigation }) => {
     const { user, logout, isAdmin } = useAuth();
 
     const handleLogout = () => {
@@ -65,6 +65,21 @@ const ProfileScreen = () => {
                             </View>
                         </View>
                     </View>
+                </View>
+
+                {/* My Orders Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Mis Pedidos</Text>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => navigation.navigate('OrderHistory')}
+                    >
+                        <View style={styles.menuItemContent}>
+                            <Text style={styles.menuItemIcon}>📦</Text>
+                            <Text style={styles.menuItemText}>Ver historial de pedidos</Text>
+                        </View>
+                        <Text style={styles.chevron}>›</Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Settings Section */}
@@ -212,6 +227,37 @@ const styles = StyleSheet.create({
         marginTop: 24,
         fontSize: 12,
         color: '#9CA3AF',
+    },
+    menuItem: {
+        backgroundColor: 'white',
+        borderRadius: 12,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    menuItemContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    menuItemIcon: {
+        fontSize: 20,
+        marginRight: 12,
+    },
+    menuItemText: {
+        fontSize: 16,
+        color: '#1F2937',
+        fontWeight: '500',
+    },
+    chevron: {
+        fontSize: 20,
+        color: '#9CA3AF',
+        fontWeight: 'bold',
     },
 });
 

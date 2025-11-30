@@ -97,9 +97,9 @@ const OrdersScreen = () => {
             </View>
             <View style={styles.orderBody}>
                 <Text style={styles.customerName}>
-                    Cliente: {item.customer_name || item.customerName || 'N/A'}
+                    Cliente: {item.user_name || 'N/A'}
                 </Text>
-                <Text style={styles.orderTotal}>{formatCurrency(item.total)}</Text>
+                <Text style={styles.orderTotal}>{formatCurrency(item.total_amount)}</Text>
             </View>
         </TouchableOpacity>
     );

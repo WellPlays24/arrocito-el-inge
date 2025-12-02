@@ -12,15 +12,25 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ordersService from '../services/ordersService';
 import { useAuth } from '../../../context/AuthContext';
 
-const OrderHistoryScreen = ({ navigation }) => {
+const OrderHistoryScreen = ({ route, navigation }) => {
+    const userId = route.params?.userId;
+    const userName = route.params?.userName;
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const { user } = useAuth();
+    const { user, isAdmin } = useAuth();
 
     const loadOrders = async () => {
         try {
-            const data = await ordersService.getMyOrders();
+            let data;
+            if (userId && isAdmin()) {
+                // Admin viewing specific user's orders
+                // We need to implement getOrders with filters in ordersService
+                data = await ordersService.getOrders({ userId });
+            } else {
+                // User viewing their own orders
+                data = await ordersService.getMyOrders();
+            }
             setOrders(data);
         } catch (error) {
             console.error('Error loading orders:', error);
@@ -32,7 +42,11 @@ const OrderHistoryScreen = ({ navigation }) => {
 
     useEffect(() => {
         loadOrders();
-    }, []);
+
+        if (userName) {
+            navigation.setOptions({ title: `Pedidos de ${userName}` });
+        }
+    }, [userId]);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
@@ -69,8 +83,7 @@ const OrderHistoryScreen = ({ navigation }) => {
         <TouchableOpacity
             style={styles.card}
             onPress={() => {
-                // Future: Navigate to detail
-                // navigation.navigate('OrderDetail', { orderId: item.id });
+                navigation.navigate('OrderDetail', { orderId: item.id });
             }}
         >
             <View style={styles.cardHeader}>
@@ -110,7 +123,9 @@ const OrderHistoryScreen = ({ navigation }) => {
                 >
                     <Text style={styles.backButtonText}>←</Text>
                 </TouchableOpacity>
-                <Text style={styles.title}>Mis Pedidos</Text>
+                <Text style={styles.title}>
+                    {userName ? `Pedidos de ${userName.split(' ')[0]}` : 'Mis Pedidos'}
+                </Text>
                 <View style={{ width: 40 }} />
             </View>
 

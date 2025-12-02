@@ -1,10 +1,8 @@
-import axios from 'axios';
-
-const API_URL = 'http://192.168.10.51:3000/api';
+import api from '../../../services/api';
 
 const getProducts = async () => {
     try {
-        const response = await axios.get(`${API_URL}/products`);
+        const response = await api.get('/products');
         return response.data;
     } catch (error) {
         console.error('Get products error:', error.response?.data || error.message);
@@ -14,7 +12,7 @@ const getProducts = async () => {
 
 const getComplements = async () => {
     try {
-        const response = await axios.get(`${API_URL}/complements`);
+        const response = await api.get('/complements');
         return response.data;
     } catch (error) {
         console.error('Get complements error:', error.response?.data || error.message);
@@ -22,7 +20,18 @@ const getComplements = async () => {
     }
 };
 
+const deleteProduct = async (id) => {
+    try {
+        const response = await api.delete(`/products/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error('Delete product error:', error.response?.data || error.message);
+        throw error.response?.data || { message: 'Error al eliminar producto' };
+    }
+};
+
 export default {
     getProducts,
     getComplements,
+    deleteProduct,
 };

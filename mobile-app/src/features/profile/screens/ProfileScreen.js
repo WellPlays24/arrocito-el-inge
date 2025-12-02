@@ -80,9 +80,22 @@ const ProfileScreen = ({ navigation }) => {
                         </View>
                         <Text style={styles.chevron}>›</Text>
                     </TouchableOpacity>
+
+                    <View style={{ height: 12 }} />
+
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => navigation.navigate('AccountsPayable')}
+                    >
+                        <View style={styles.menuItemContent}>
+                            <Text style={styles.menuItemIcon}>💰</Text>
+                            <Text style={styles.menuItemText}>Cuentas por Pagar</Text>
+                        </View>
+                        <Text style={styles.chevron}>›</Text>
+                    </TouchableOpacity>
                 </View>
 
-                {/* Settings Section */}
+                {/* My Orders Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Configuración</Text>
                     <View style={styles.card}>

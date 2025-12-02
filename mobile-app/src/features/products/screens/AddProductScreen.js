@@ -1,0 +1,227 @@
+import React, { useState } from 'react';
+import {
+    View,
+    Text,
+    TextInput,
+    StyleSheet,
+    TouchableOpacity,
+    ScrollView,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import api from '../../../services/api';
+
+const AddProductScreen = ({ navigation }) => {
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [price, setPrice] = useState('');
+    const [stock, setStock] = useState('');
+    const [imageUrl, setImageUrl] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async () => {
+        // Validation
+        if (!name.trim()) {
+            Alert.alert('Error', 'El nombre es requerido');
+            return;
+        }
+        if (!price || isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
+            Alert.alert('Error', 'El precio debe ser un número mayor a 0');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const productData = {
+                name: name.trim(),
+                description: description.trim() || null,
+                price: parseFloat(price),
+                stock: stock ? parseInt(stock) : 0,
+                image_url: imageUrl.trim() || null,
+                is_active: true,
+            };
+
+            await api.post('/products', productData);
+            Alert.alert('Éxito', 'Producto creado correctamente', [
+                { text: 'OK', onPress: () => navigation.goBack() }
+            ]);
+        } catch (error) {
+            Alert.alert('Error', error.message || 'No se pudo crear el producto');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.keyboardView}
+            >
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity
+                        onPress={() => navigation.goBack()}
+                        style={styles.backButton}
+                    >
+                        <Text style={styles.backButtonText}>←</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Agregar Producto</Text>
+                    <View style={{ width: 40 }} />
+                </View>
+
+                <ScrollView style={styles.content}>
+                    {/* Name */}
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>Nombre *</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Ej: Arroz con Pollo"
+                            value={name}
+                            onChangeText={setName}
+                        />
+                    </View>
+
+                    {/* Description */}
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>Descripción</Text>
+                        <TextInput
+                            style={[styles.input, styles.textArea]}
+                            placeholder="Descripción del producto"
+                            value={description}
+                            onChangeText={setDescription}
+                            multiline
+                            numberOfLines={3}
+                        />
+                    </View>
+
+                    {/* Price */}
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>Precio *</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="0.00"
+                            value={price}
+                            onChangeText={setPrice}
+                            keyboardType="decimal-pad"
+                        />
+                    </View>
+
+                    {/* Stock */}
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>Stock</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="0"
+                            value={stock}
+                            onChangeText={setStock}
+                            keyboardType="number-pad"
+                        />
+                    </View>
+
+                    {/* Image URL */}
+                    <View style={styles.formGroup}>
+                        <Text style={styles.label}>URL de Imagen</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="https://..."
+                            value={imageUrl}
+                            onChangeText={setImageUrl}
+                            autoCapitalize="none"
+                        />
+                    </View>
+
+                    {/* Submit Button */}
+                    <TouchableOpacity
+                        style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+                        onPress={handleSubmit}
+                        disabled={loading}
+                    >
+                        <Text style={styles.submitButtonText}>
+                            {loading ? 'Creando...' : 'Crear Producto'}
+                        </Text>
+                    </TouchableOpacity>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#F9FAFB',
+    },
+    keyboardView: {
+        flex: 1,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: 'white',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
+    },
+    backButton: {
+        padding: 8,
+    },
+    backButtonText: {
+        fontSize: 24,
+        color: '#1F2937',
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#1F2937',
+    },
+    content: {
+        flex: 1,
+        padding: 20,
+    },
+    formGroup: {
+        marginBottom: 20,
+    },
+    label: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#374151',
+        marginBottom: 8,
+    },
+    input: {
+        backgroundColor: 'white',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        fontSize: 16,
+        color: '#1F2937',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    textArea: {
+        minHeight: 80,
+        textAlignVertical: 'top',
+    },
+    submitButton: {
+        backgroundColor: '#10B981',
+        borderRadius: 12,
+        paddingVertical: 16,
+        alignItems: 'center',
+        marginTop: 20,
+        marginBottom: 40,
+    },
+    submitButtonDisabled: {
+        backgroundColor: '#9CA3AF',
+    },
+    submitButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+});
+
+export default AddProductScreen;

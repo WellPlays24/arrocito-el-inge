@@ -16,7 +16,7 @@ async function getAllOrders(req, res) {
     const conditions = [];
     const params = [];
     let idx = 1;
-    
+
     // Si NO es admin, obligamos a que solo vea sus propios pedidos
     if (!isAdmin) {
       userId = req.user.id;
@@ -318,6 +318,7 @@ async function createOrder(req, res) {
   }
 }
 
+
 // ---------------------------------------------------------------------
 // PATCH /api/orders/:id/status
 // Body: { status: 'pending' | 'completed' | 'cancelled' }
@@ -337,7 +338,7 @@ async function updateOrderStatus(req, res) {
       `
       UPDATE orders
       SET status = $1,
-          updated_at = NOW()
+      updated_at = NOW()
       WHERE id = $2
       RETURNING id, user_id, order_date, total_amount, payment_method, is_credit, status, notes, created_at, updated_at
       `,
@@ -348,7 +349,16 @@ async function updateOrderStatus(req, res) {
       return res.status(404).json({ message: 'Pedido no encontrado' });
     }
 
-    return res.json(result.rows[0]);
+    const updatedOrder = result.rows[0];
+
+    // Si el pedido se completó, actualizamos el resumen diario
+    if (status === 'completed') {
+      const { calculateAndSaveDailySummary } = require('./dailySummary.controller');
+      const orderDate = new Date(updatedOrder.order_date).toISOString().split('T')[0];
+      await calculateAndSaveDailySummary(orderDate);
+    }
+
+    return res.json(updatedOrder);
   } catch (error) {
     console.error('Error al actualizar estado del pedido:', error);
     return res
@@ -357,9 +367,56 @@ async function updateOrderStatus(req, res) {
   }
 }
 
+// ---------------------------------------------------------------------
+// DELETE /api/orders/:id
+// Elimina un pedido (solo admin)
+// ---------------------------------------------------------------------
+async function deleteOrder(req, res) {
+  const client = await pool.connect();
+
+  try {
+    const { id } = req.params;
+
+    await client.query('BEGIN');
+
+    // Delete order_item_complements first (foreign key constraint)
+    await client.query(
+      `DELETE FROM order_item_complements 
+       WHERE order_item_id IN (
+         SELECT id FROM order_items WHERE order_id = $1
+       )`,
+      [id]
+    );
+
+    // Delete order_items
+    await client.query('DELETE FROM order_items WHERE order_id = $1', [id]);
+
+    // Delete the order
+    const result = await client.query(
+      'DELETE FROM orders WHERE id = $1 RETURNING id',
+      [id]
+    );
+
+    if (result.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Pedido no encontrado' });
+    }
+
+    await client.query('COMMIT');
+    return res.json({ message: 'Pedido eliminado exitosamente' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error al eliminar pedido:', error);
+    return res.status(500).json({ message: 'Error al eliminar pedido' });
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   getAllOrders,
   getOrderById,
   createOrder,
   updateOrderStatus,
+  deleteOrder,
 };

@@ -43,22 +43,54 @@ async function getDailySummaryList(req, res) {
 }
 
 // GET /api/daily-summary/by-date/:date  (ej: 2025-11-16)
+// OR GET /api/daily-summary?date=2025-11-16
 async function getDailySummaryByDate(req, res) {
   try {
-    const { date } = req.params;
+    const date = req.params.date || req.query.date || new Date().toISOString().split('T')[0];
 
-    const result = await db.query(
-      `SELECT id, date, total_sales, total_expenses, net_profit
-       FROM daily_summary
+    // Calculate metrics in real-time from orders table
+    const ordersRes = await db.query(
+      `
+      SELECT 
+        COUNT(*) FILTER (WHERE status = 'completed') AS completed_orders,
+        COUNT(*) FILTER (WHERE status = 'pending') AS pending_orders,
+        COUNT(*) AS total_orders,
+        COALESCE(SUM(total_amount) FILTER (WHERE status = 'completed'), 0) AS total_sales
+      FROM orders
+      WHERE DATE(order_date) = $1
+      `,
+      [date]
+    );
+
+    const expensesRes = await db.query(
+      `SELECT COALESCE(SUM(amount), 0) AS total_expenses
+       FROM daily_expenses
        WHERE date = $1`,
       [date]
     );
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'No hay resumen para esa fecha' });
-    }
+    const totalSales = Number(ordersRes.rows[0].total_sales) || 0;
+    const totalExpenses = Number(expensesRes.rows[0].total_expenses) || 0;
+    const netProfit = totalSales - totalExpenses;
+    const totalOrders = Number(ordersRes.rows[0].total_orders) || 0;
+    const completedOrders = Number(ordersRes.rows[0].completed_orders) || 0;
+    const pendingOrders = Number(ordersRes.rows[0].pending_orders) || 0;
 
-    return res.json(result.rows[0]);
+    return res.json({
+      date,
+      totalSales: totalSales,
+      total_sales: totalSales, // Both formats for compatibility
+      totalExpenses: totalExpenses,
+      total_expenses: totalExpenses,
+      netProfit: netProfit,
+      net_profit: netProfit,
+      totalOrders: totalOrders,
+      total_orders: totalOrders,
+      completedOrders: completedOrders,
+      completed_orders: completedOrders,
+      pendingOrders: pendingOrders,
+      pending_orders: pendingOrders,
+    });
   } catch (error) {
     console.error('Error al obtener resumen por fecha:', error);
     return res
@@ -67,9 +99,51 @@ async function getDailySummaryByDate(req, res) {
   }
 }
 
+// Helper para calcular y actualizar el resumen de un día
+async function calculateAndSaveDailySummary(date) {
+  // Ventas del día (solo pedidos completados)
+  const salesRes = await db.query(
+    `
+    SELECT COALESCE(SUM(total_amount), 0) AS total_sales
+    FROM orders
+    WHERE status = 'completed'
+      AND DATE(order_date) = $1
+    `,
+    [date]
+  );
+
+  const expensesRes = await db.query(
+    `
+    SELECT COALESCE(SUM(amount), 0) AS total_expenses
+    FROM daily_expenses
+    WHERE date = $1
+    `,
+    [date]
+  );
+
+  const totalSales = Number(salesRes.rows[0].total_sales) || 0;
+  const totalExpenses = Number(expensesRes.rows[0].total_expenses) || 0;
+  const netProfit = totalSales - totalExpenses;
+
+  const upsertRes = await db.query(
+    `
+    INSERT INTO daily_summary (date, total_sales, total_expenses, net_profit)
+    VALUES ($1, $2, $3, $4)
+    ON CONFLICT (date)
+    DO UPDATE SET
+      total_sales = EXCLUDED.total_sales,
+      total_expenses = EXCLUDED.total_expenses,
+      net_profit = EXCLUDED.net_profit
+    RETURNING id, date, total_sales, total_expenses, net_profit
+    `,
+    [date, totalSales, totalExpenses, netProfit]
+  );
+
+  return upsertRes.rows[0];
+}
+
 // POST /api/daily-summary/recalculate
 // Body: { "date": "2025-11-16" }
-// Calcula desde orders (ventas) y daily_expenses (gastos) y hace UPSERT
 async function recalculateDailySummary(req, res) {
   try {
     const { date } = req.body;
@@ -80,47 +154,11 @@ async function recalculateDailySummary(req, res) {
         .json({ message: 'date es obligatorio (YYYY-MM-DD)' });
     }
 
-    // Ventas del día (solo pedidos completados)
-    const salesRes = await db.query(
-      `
-      SELECT COALESCE(SUM(total_amount), 0) AS total_sales
-      FROM orders
-      WHERE status = 'completed'
-        AND DATE(order_date) = $1
-      `,
-      [date]
-    );
-
-    const expensesRes = await db.query(
-      `
-      SELECT COALESCE(SUM(amount), 0) AS total_expenses
-      FROM daily_expenses
-      WHERE date = $1
-      `,
-      [date]
-    );
-
-    const totalSales = Number(salesRes.rows[0].total_sales) || 0;
-    const totalExpenses = Number(expensesRes.rows[0].total_expenses) || 0;
-    const netProfit = totalSales - totalExpenses;
-
-    const upsertRes = await db.query(
-      `
-      INSERT INTO daily_summary (date, total_sales, total_expenses, net_profit)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (date)
-      DO UPDATE SET
-        total_sales = EXCLUDED.total_sales,
-        total_expenses = EXCLUDED.total_expenses,
-        net_profit = EXCLUDED.net_profit
-      RETURNING id, date, total_sales, total_expenses, net_profit
-      `,
-      [date, totalSales, totalExpenses, netProfit]
-    );
+    const summary = await calculateAndSaveDailySummary(date);
 
     return res.json({
       message: 'Resumen recalculado correctamente',
-      summary: upsertRes.rows[0],
+      summary,
     });
   } catch (error) {
     console.error('Error al recalcular resumen diario:', error);
@@ -153,9 +191,27 @@ async function deleteDailySummary(req, res) {
   }
 }
 
+// GET /api/daily-summary/total-sales
+// Retorna la suma total de ventas históricas
+async function getTotalSales(req, res) {
+  try {
+    const result = await db.query(
+      `SELECT COALESCE(SUM(total_amount), 0) AS total_sales
+       FROM orders
+       WHERE status = 'completed'`
+    );
+    return res.json({ total_sales: result.rows[0].total_sales });
+  } catch (error) {
+    console.error('Error al obtener ventas totales:', error);
+    return res.status(500).json({ message: 'Error al obtener ventas totales' });
+  }
+}
+
 module.exports = {
   getDailySummaryList,
   getDailySummaryByDate,
   recalculateDailySummary,
   deleteDailySummary,
+  calculateAndSaveDailySummary,
+  getTotalSales,
 };

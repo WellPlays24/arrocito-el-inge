@@ -1,7 +1,7 @@
 // src/routes/users.routes.js
 const express = require('express');
-const {getAllUsers, getUserById,createUser, updateUser, deleteUser} = require('../controllers/users.controller');
-const {authRequired, roleRequired} = require('../middleware/auth.middleware');
+const { getAllUsers, getUserById, createUser, updateUser, deleteUser, getDebtors } = require('../controllers/users.controller');
+const { authRequired, roleRequired } = require('../middleware/auth.middleware');
 
 
 const router = express.Router();
@@ -10,6 +10,10 @@ const router = express.Router();
 // GET /api/users
 //router.get('/', getAllUsers);
 router.get('/', authRequired, roleRequired('admin'), getAllUsers);
+
+// Obtener deudores (antes de /:id para evitar conflictos)
+// GET /api/users/debtors
+router.get('/debtors', authRequired, roleRequired('admin'), getDebtors);
 
 
 // Obtener usuario por id
@@ -22,10 +26,10 @@ router.post('/', authRequired, roleRequired('admin'), createUser);
 
 // Actualizar usuario
 // PUT /api/users/:id
-router.put('/:id', authRequired, roleRequired('admin'),updateUser);
+router.put('/:id', authRequired, roleRequired('admin'), updateUser);
 
 // Eliminar usuario
 // DELETE /api/users/:id
-router.delete('/:id', authRequired, roleRequired('admin'),deleteUser);
+router.delete('/:id', authRequired, roleRequired('admin'), deleteUser);
 
 module.exports = router;

@@ -1,25 +1,11 @@
-import axios from 'axios';
-
-const API_URL = 'http://192.168.10.51:3000/api';
-
-// Helper to get token from storage (will be improved with AsyncStorage later)
-let authToken = null;
-
-export const setAuthToken = (token) => {
-    authToken = token;
-};
-
-export const getAuthToken = () => {
-    return authToken;
-};
+import api from '../../../services/api';
 
 const getDailySummary = async (date) => {
     try {
         const dateParam = date || new Date().toISOString().split('T')[0];
-        const token = getAuthToken();
-        const response = await axios.get(`${API_URL}/daily-summary`, {
-            params: { date: dateParam },
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        // The api instance already handles the token via interceptor
+        const response = await api.get('/daily-summary', {
+            params: { date: dateParam }
         });
         return response.data;
     } catch (error) {
@@ -31,10 +17,8 @@ const getDailySummary = async (date) => {
 const getDailyExpenses = async (date) => {
     try {
         const dateParam = date || new Date().toISOString().split('T')[0];
-        const token = getAuthToken();
-        const response = await axios.get(`${API_URL}/daily-expenses`, {
-            params: { date: dateParam },
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        const response = await api.get('/daily-expenses', {
+            params: { date: dateParam }
         });
         return response.data;
     } catch (error) {
@@ -43,7 +27,18 @@ const getDailyExpenses = async (date) => {
     }
 };
 
+const getTotalSales = async () => {
+    try {
+        const response = await api.get('/daily-summary/total-sales');
+        return response.data;
+    } catch (error) {
+        console.error('Get total sales error:', error.response?.data || error.message);
+        throw error.response?.data || { message: 'Error al cargar ventas totales' };
+    }
+};
+
 export default {
     getDailySummary,
     getDailyExpenses,
+    getTotalSales,
 };

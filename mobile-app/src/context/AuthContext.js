@@ -1,24 +1,58 @@
-import React, { createContext, useState, useContext } from 'react';
-import { setAuthToken } from '../features/dashboard/services/dashboardService';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    const login = (userData, authToken) => {
-        setUser(userData);
-        setToken(authToken);
-        setAuthToken(authToken); // Save token for API requests
-        // In production, save to AsyncStorage
+    // Load token and user from storage on app start
+    useEffect(() => {
+        loadStoredAuth();
+    }, []);
+
+    const loadStoredAuth = async () => {
+        try {
+            const storedToken = await AsyncStorage.getItem('token');
+            const storedUser = await AsyncStorage.getItem('user');
+
+            if (storedToken && storedUser) {
+                setToken(storedToken);
+                setUser(JSON.parse(storedUser));
+            }
+        } catch (error) {
+            console.error('Error loading auth from storage:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const logout = () => {
-        setUser(null);
-        setToken(null);
-        setAuthToken(null); // Clear token from API requests
-        // In production, clear AsyncStorage
+    const login = async (userData, authToken) => {
+        try {
+            setUser(userData);
+            setToken(authToken);
+
+            // Save to AsyncStorage
+            await AsyncStorage.setItem('token', authToken);
+            await AsyncStorage.setItem('user', JSON.stringify(userData));
+        } catch (error) {
+            console.error('Error saving auth to storage:', error);
+        }
+    };
+
+    const logout = async () => {
+        try {
+            setUser(null);
+            setToken(null);
+
+            // Clear AsyncStorage
+            await AsyncStorage.removeItem('token');
+            await AsyncStorage.removeItem('user');
+        } catch (error) {
+            console.error('Error clearing auth from storage:', error);
+        }
     };
 
     const isAuthenticated = () => {
@@ -38,6 +72,7 @@ export const AuthProvider = ({ children }) => {
             value={{
                 user,
                 token,
+                loading,
                 login,
                 logout,
                 isAuthenticated,

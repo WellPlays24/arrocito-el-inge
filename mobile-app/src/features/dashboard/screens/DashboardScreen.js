@@ -7,20 +7,30 @@ import {
     RefreshControl,
     TouchableOpacity,
     Alert,
+    Modal,
+    TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import dashboardService from '../services/dashboardService';
 
-const DashboardScreen = () => {
+const DashboardScreen = ({ navigation }) => {
     const [summary, setSummary] = useState(null);
+    const [totalSales, setTotalSales] = useState(0);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [tempDate, setTempDate] = useState(new Date().toISOString().split('T')[0]);
+    const [showHistoricalSales, setShowHistoricalSales] = useState(true);
 
     const loadDashboardData = async () => {
         try {
-            const data = await dashboardService.getDailySummary(selectedDate);
-            setSummary(data);
+            const [dailyData, totalData] = await Promise.all([
+                dashboardService.getDailySummary(selectedDate),
+                dashboardService.getTotalSales()
+            ]);
+            setSummary(dailyData);
+            setTotalSales(totalData.total_sales);
         } catch (error) {
             Alert.alert('Error', error.message || 'No se pudo cargar el resumen');
         } finally {
@@ -92,25 +102,131 @@ const DashboardScreen = () => {
 
                 {/* Date Filter */}
                 <View style={styles.dateFilter}>
-                    <TouchableOpacity
-                        style={[styles.filterButton, selectedDate === new Date().toISOString().split('T')[0] && styles.filterButtonActive]}
-                        onPress={setToday}
-                    >
-                        <Text style={[styles.filterButtonText, selectedDate === new Date().toISOString().split('T')[0] && styles.filterButtonTextActive]}>
-                            Hoy
-                        </Text>
+                    <TouchableOpacity onPress={() => {
+                        const date = new Date(selectedDate);
+                        date.setDate(date.getDate() - 1);
+                        setSelectedDate(date.toISOString().split('T')[0]);
+                    }} style={styles.navButton}>
+                        <Text style={styles.navButtonText}>←</Text>
                     </TouchableOpacity>
+
                     <TouchableOpacity
-                        style={styles.filterButton}
-                        onPress={setYesterday}
+                        style={styles.dateDisplay}
+                        onPress={() => setModalVisible(true)}
                     >
-                        <Text style={styles.filterButtonText}>Ayer</Text>
+                        <Text style={styles.dateDisplayText}>
+                            {formatDate(selectedDate)}
+                        </Text>
+                        <Text style={styles.dateSubtext}>Toca para cambiar</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => {
+                        const date = new Date(selectedDate);
+                        date.setDate(date.getDate() + 1);
+                        setSelectedDate(date.toISOString().split('T')[0]);
+                    }} style={styles.navButton}>
+                        <Text style={styles.navButtonText}>→</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* Primary Metric - Total Sales */}
+                {/* Date Selection Modal */}
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={modalVisible}
+                    onRequestClose={() => setModalVisible(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Seleccionar Fecha</Text>
+                            <Text style={styles.modalSubtitle}>Formato: YYYY-MM-DD</Text>
+
+                            <TextInput
+                                style={styles.input}
+                                value={tempDate}
+                                onChangeText={setTempDate}
+                                placeholder="2025-12-01"
+                                keyboardType="numeric"
+                            />
+
+                            <View style={styles.modalButtons}>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, styles.cancelButton]}
+                                    onPress={() => setModalVisible(false)}
+                                >
+                                    <Text style={styles.cancelButtonText}>Cancelar</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, styles.confirmButton]}
+                                    onPress={() => {
+                                        // Simple validation
+                                        if (/^\d{4}-\d{2}-\d{2}$/.test(tempDate)) {
+                                            setSelectedDate(tempDate);
+                                            setModalVisible(false);
+                                        } else {
+                                            Alert.alert('Error', 'Formato de fecha inválido');
+                                        }
+                                    }}
+                                >
+                                    <Text style={styles.confirmButtonText}>Confirmar</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <TouchableOpacity
+                                style={styles.todayButton}
+                                onPress={() => {
+                                    const today = new Date().toISOString().split('T')[0];
+                                    setSelectedDate(today);
+                                    setTempDate(today);
+                                    setModalVisible(false);
+                                }}
+                            >
+                                <Text style={styles.todayButtonText}>Ir a Hoy</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
+
+                {/* Debtors Button */}
+                <View style={styles.actionContainer}>
+                    <TouchableOpacity
+                        style={styles.debtorsButton}
+                        onPress={() => navigation.navigate('Debtors')}
+                    >
+                        <Text style={styles.debtorsButtonText}>👥 Ver Deudores</Text>
+                        <Text style={styles.debtorsButtonArrow}>›</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* All Time Sales */}
+                {showHistoricalSales && (
+                    <View style={[styles.primaryCard, { backgroundColor: '#4F46E5', marginBottom: 12 }]}>
+                        <TouchableOpacity
+                            style={styles.toggleButton}
+                            onPress={() => setShowHistoricalSales(false)}
+                        >
+                            <Text style={styles.toggleButtonText}>✕</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.primaryLabel}>Ventas Históricas</Text>
+                        <Text style={styles.primaryValue}>
+                            {formatCurrency(totalSales)}
+                        </Text>
+                        <Text style={styles.primarySubtext}>Acumulado total</Text>
+                    </View>
+                )}
+
+                {!showHistoricalSales && (
+                    <TouchableOpacity
+                        style={styles.showHistoricalButton}
+                        onPress={() => setShowHistoricalSales(true)}
+                    >
+                        <Text style={styles.showHistoricalText}>📊 Mostrar Ventas Históricas</Text>
+                    </TouchableOpacity>
+                )}
+
+                {/* Daily Sales */}
                 <View style={styles.primaryCard}>
-                    <Text style={styles.primaryLabel}>Ventas Totales</Text>
+                    <Text style={styles.primaryLabel}>Ventas del Día</Text>
                     <Text style={styles.primaryValue}>
                         {formatCurrency(summary?.totalSales || summary?.total_sales || 0)}
                     </Text>
@@ -154,6 +270,27 @@ const DashboardScreen = () => {
                             {summary?.pendingOrders || summary?.pending_orders || 0}
                         </Text>
                         <Text style={styles.metricLabel}>Pendientes</Text>
+                    </View>
+                </View>
+
+                {/* Admin Actions */}
+                <View style={styles.adminActionsSection}>
+                    <Text style={styles.sectionTitle}>Acciones de Administrador</Text>
+                    <View style={styles.adminButtonsRow}>
+                        <TouchableOpacity
+                            style={[styles.adminButton, { backgroundColor: '#EF4444' }]}
+                            onPress={() => navigation.navigate('Debtors')}
+                        >
+                            <Text style={styles.adminButtonIcon}>💰</Text>
+                            <Text style={styles.adminButtonText}>Ver Deudores</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.adminButton, { backgroundColor: '#3B82F6' }]}
+                            onPress={() => navigation.navigate('AdminOrders')}
+                        >
+                            <Text style={styles.adminButtonIcon}>📋</Text>
+                            <Text style={styles.adminButtonText}>Todos los Pedidos</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
@@ -223,27 +360,111 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         paddingHorizontal: 20,
         paddingVertical: 16,
-        gap: 12,
-    },
-    filterButton: {
-        paddingHorizontal: 20,
-        paddingVertical: 8,
-        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'space-between',
         backgroundColor: 'white',
+        marginBottom: 12,
+    },
+    navButton: {
+        padding: 10,
+        backgroundColor: '#F3F4F6',
+        borderRadius: 8,
+    },
+    navButtonText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#1F2937',
+    },
+    dateDisplay: {
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        backgroundColor: '#FFF7ED',
+        borderWidth: 1,
+        borderColor: '#FFEDD5',
+    },
+    dateDisplayText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#C2410C',
+        textTransform: 'capitalize',
+    },
+    dateSubtext: {
+        fontSize: 10,
+        color: '#9A3412',
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContent: {
+        width: '80%',
+        backgroundColor: 'white',
+        borderRadius: 16,
+        padding: 24,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 8,
+        color: '#1F2937',
+    },
+    modalSubtitle: {
+        fontSize: 14,
+        color: '#6B7280',
+        marginBottom: 16,
+    },
+    input: {
+        width: '100%',
         borderWidth: 1,
         borderColor: '#E5E7EB',
+        borderRadius: 8,
+        padding: 12,
+        fontSize: 16,
+        marginBottom: 20,
+        textAlign: 'center',
     },
-    filterButtonActive: {
+    modalButtons: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    modalButton: {
+        flex: 1,
+        paddingVertical: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    cancelButton: {
+        backgroundColor: '#F3F4F6',
+    },
+    confirmButton: {
         backgroundColor: '#FF6B00',
-        borderColor: '#FF6B00',
     },
-    filterButtonText: {
-        fontSize: 14,
+    cancelButtonText: {
+        color: '#4B5563',
         fontWeight: '600',
-        color: '#6B7280',
     },
-    filterButtonTextActive: {
+    confirmButtonText: {
         color: 'white',
+        fontWeight: 'bold',
+    },
+    todayButton: {
+        marginTop: 12,
+        padding: 8,
+    },
+    todayButtonText: {
+        color: '#FF6B00',
+        fontWeight: '600',
     },
     primaryCard: {
         marginHorizontal: 20,
@@ -361,6 +582,83 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         color: '#FF6B00',
+    },
+    actionContainer: {
+        paddingHorizontal: 20,
+        marginBottom: 20,
+    },
+    debtorsButton: {
+        backgroundColor: 'white',
+        borderRadius: 12,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    adminActionsSection: {
+        marginTop: 12,
+        paddingHorizontal: 20,
+    },
+    adminButtonsRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    adminButton: {
+        flex: 1,
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    adminButtonIcon: {
+        fontSize: 24,
+        marginBottom: 8,
+    },
+    adminButtonText: {
+        color: 'white',
+        fontSize: 14,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    toggleButton: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
+    },
+    toggleButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    showHistoricalButton: {
+        backgroundColor: '#4F46E5',
+        padding: 12,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginBottom: 12,
+        marginHorizontal: 20,
+    },
+    showHistoricalText: {
+        color: 'white',
+        fontSize: 14,
+        fontWeight: '600',
     },
 });
 

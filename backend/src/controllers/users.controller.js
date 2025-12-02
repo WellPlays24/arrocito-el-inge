@@ -57,8 +57,8 @@ async function createUser(req, res) {
     const { name, phone, email, password, role, cedula, date_of_birth } = req.body;
 
     if (cedula && !validarCedula(cedula)) {
-  return res.status(400).json({ message: 'Cédula ecuatoriana inválida' });
-}
+      return res.status(400).json({ message: 'Cédula ecuatoriana inválida' });
+    }
 
     if (!name || !email || !password || !role) {
       return res.status(400).json({
@@ -117,8 +117,8 @@ async function updateUser(req, res) {
     const { name, phone, password, role, cedula, date_of_birth } = req.body;
 
     if (cedula && !validarCedula(cedula)) {
-  return res.status(400).json({ message: 'Cédula ecuatoriana inválida' });
-}
+      return res.status(400).json({ message: 'Cédula ecuatoriana inválida' });
+    }
 
     const userRes = await db.query(
       'SELECT id, password_hash FROM users WHERE id = $1',
@@ -209,10 +209,39 @@ async function deleteUser(req, res) {
   }
 }
 
+// GET /api/users/debtors
+// Retorna usuarios que tienen pedidos pendientes de pago (status != 'completed' AND status != 'cancelled')
+async function getDebtors(req, res) {
+  try {
+    const result = await db.query(
+      `
+      SELECT
+        u.id,
+        u.name,
+        u.phone,
+        u.email,
+        COUNT(o.id) AS pending_orders_count,
+        COALESCE(SUM(o.total_amount), 0) AS total_debt
+      FROM users u
+      JOIN orders o ON o.user_id = u.id
+      WHERE o.status NOT IN ('completed', 'cancelled')
+      GROUP BY u.id, u.name, u.phone, u.email
+      ORDER BY total_debt DESC
+      `
+    );
+
+    return res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener deudores:', error);
+    return res.status(500).json({ message: 'Error al obtener deudores' });
+  }
+}
+
 module.exports = {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
+  getDebtors,
 };

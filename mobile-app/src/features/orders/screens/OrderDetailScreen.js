@@ -6,6 +6,7 @@ import {
     StyleSheet,
     ActivityIndicator,
     TouchableOpacity,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ordersService from '../services/ordersService';
@@ -194,23 +195,38 @@ const OrderDetailScreen = ({ route, navigation }) => {
                     <View style={styles.adminActions}>
                         <Text style={styles.adminTitle}>Acciones de Administrador</Text>
 
-                        {order.status === 'pending' && (
+                        {/* Status Change Buttons - Always visible */}
+                        <View style={styles.statusChangeSection}>
+                            <Text style={styles.subsectionTitle}>Cambiar Estado:</Text>
                             <View style={styles.actionButtons}>
-                                <TouchableOpacity
-                                    style={[styles.actionButton, styles.completeButton]}
-                                    onPress={() => handleStatusUpdate('completed')}
-                                >
-                                    <Text style={styles.actionButtonText}>✓ Completar</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.actionButton, styles.cancelButton]}
-                                    onPress={() => handleStatusUpdate('cancelled')}
-                                >
-                                    <Text style={styles.actionButtonText}>✕ Cancelar</Text>
-                                </TouchableOpacity>
+                                {order.status !== 'pending' && (
+                                    <TouchableOpacity
+                                        style={[styles.actionButton, styles.pendingButton]}
+                                        onPress={() => handleStatusUpdate('pending')}
+                                    >
+                                        <Text style={styles.actionButtonText}>⏳ Pendiente</Text>
+                                    </TouchableOpacity>
+                                )}
+                                {order.status !== 'completed' && (
+                                    <TouchableOpacity
+                                        style={[styles.actionButton, styles.completeButton]}
+                                        onPress={() => handleStatusUpdate('completed')}
+                                    >
+                                        <Text style={styles.actionButtonText}>✓ Completar</Text>
+                                    </TouchableOpacity>
+                                )}
+                                {order.status !== 'cancelled' && (
+                                    <TouchableOpacity
+                                        style={[styles.actionButton, styles.cancelButton]}
+                                        onPress={() => handleStatusUpdate('cancelled')}
+                                    >
+                                        <Text style={styles.actionButtonText}>✕ Cancelar</Text>
+                                    </TouchableOpacity>
+                                )}
                             </View>
-                        )}
+                        </View>
 
+                        {/* Delete Button */}
                         <TouchableOpacity
                             style={[styles.actionButton, styles.deleteButton]}
                             onPress={handleDeleteOrder}
@@ -404,6 +420,15 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         textAlign: 'center',
     },
+    statusChangeSection: {
+        marginBottom: 12,
+    },
+    subsectionTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#4B5563',
+        marginBottom: 8,
+    },
     actionButtons: {
         flexDirection: 'row',
         gap: 12,
@@ -414,6 +439,9 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    pendingButton: {
+        backgroundColor: '#F59E0B',
     },
     completeButton: {
         backgroundColor: '#10B981',

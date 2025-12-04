@@ -33,6 +33,7 @@ const OrdersScreen = ({ navigation }) => {
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [notes, setNotes] = useState('');
     const [showUserPicker, setShowUserPicker] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         loadOrders();
@@ -91,6 +92,10 @@ const OrdersScreen = ({ navigation }) => {
     const onRefresh = () => {
         setRefreshing(true);
         loadOrders();
+        if (isAdmin()) {
+            loadUsers();
+            loadProducts();
+        }
     };
 
     const addProductToOrder = (product) => {
@@ -144,14 +149,14 @@ const OrdersScreen = ({ navigation }) => {
 
         try {
             const orderData = {
-                userId: selectedUserId,
+                user_id: selectedUserId,
                 items: selectedItems.map(item => ({
-                    productId: item.productId,
+                    product_id: item.productId,
                     quantity: item.quantity,
                     complements: item.complements
                 })),
-                paymentMethod,
-                isCredit: paymentMethod === 'credit',
+                payment_method: paymentMethod,
+                is_credit: paymentMethod === 'transfer',
                 notes
             };
 
@@ -241,7 +246,15 @@ const OrdersScreen = ({ navigation }) => {
     if (isAdmin()) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
-                <ScrollView>
+                <ScrollView
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor="#FF6B00"
+                        />
+                    }
+                >
                     {/* Header */}
                     <View style={styles.header}>
                         <Text style={styles.headerTitle}>Gestión de Pedidos</Text>
@@ -333,10 +346,10 @@ const OrdersScreen = ({ navigation }) => {
                                             </Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity
-                                            style={[styles.paymentButton, paymentMethod === 'credit' && styles.paymentButtonActive]}
-                                            onPress={() => setPaymentMethod('credit')}
+                                            style={[styles.paymentButton, paymentMethod === 'transfer' && styles.paymentButtonActive]}
+                                            onPress={() => setPaymentMethod('transfer')}
                                         >
-                                            <Text style={[styles.paymentButtonText, paymentMethod === 'credit' && styles.paymentButtonTextActive]}>
+                                            <Text style={[styles.paymentButtonText, paymentMethod === 'transfer' && styles.paymentButtonTextActive]}>
                                                 Crédito
                                             </Text>
                                         </TouchableOpacity>
@@ -362,53 +375,6 @@ const OrdersScreen = ({ navigation }) => {
                             </View>
                         )}
                     </View>
-
-                    {/* Orders List */}
-                    <View style={styles.ordersListSection}>
-                        <Text style={styles.sectionTitle}>Pedidos</Text>
-
-                        {/* Filter Tabs */}
-                        <View style={styles.filterTabs}>
-                            <TouchableOpacity
-                                style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
-                                onPress={() => setFilter('all')}
-                            >
-                                <Text style={[styles.filterTabText, filter === 'all' && styles.filterTabTextActive]}>
-                                    Todas
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.filterTab, filter === 'pending' && styles.filterTabActive]}
-                                onPress={() => setFilter('pending')}
-                            >
-                                <Text style={[styles.filterTabText, filter === 'pending' && styles.filterTabTextActive]}>
-                                    Pendientes
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.filterTab, filter === 'completed' && styles.filterTabActive]}
-                                onPress={() => setFilter('completed')}
-                            >
-                                <Text style={[styles.filterTabText, filter === 'completed' && styles.filterTabTextActive]}>
-                                    Completadas
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Orders */}
-                        {orders.map(order => (
-                            <View key={order.id}>
-                                {renderOrder({ item: order })}
-                            </View>
-                        ))}
-
-                        {orders.length === 0 && (
-                            <View style={styles.emptyContainer}>
-                                <Text style={styles.emptyIcon}>📦</Text>
-                                <Text style={styles.emptyText}>No hay órdenes</Text>
-                            </View>
-                        )}
-                    </View>
                 </ScrollView>
 
                 {/* User Picker Modal */}
@@ -420,24 +386,41 @@ const OrdersScreen = ({ navigation }) => {
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContent}>
                             <Text style={styles.modalTitle}>Seleccionar Cliente</Text>
+
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Buscar cliente..."
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                            />
+
                             <ScrollView style={styles.userList}>
-                                {users.map(user => (
-                                    <TouchableOpacity
-                                        key={user.id}
-                                        style={styles.userItem}
-                                        onPress={() => {
-                                            setSelectedUserId(user.id);
-                                            setShowUserPicker(false);
-                                        }}
-                                    >
-                                        <Text style={styles.userName}>{user.name}</Text>
-                                        <Text style={styles.userEmail}>{user.email}</Text>
-                                    </TouchableOpacity>
-                                ))}
+                                {users
+                                    .filter(user =>
+                                        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+                                    )
+                                    .map(user => (
+                                        <TouchableOpacity
+                                            key={user.id}
+                                            style={styles.userItem}
+                                            onPress={() => {
+                                                setSelectedUserId(user.id);
+                                                setShowUserPicker(false);
+                                                setSearchQuery(''); // Reset search
+                                            }}
+                                        >
+                                            <Text style={styles.userName}>{user.name}</Text>
+                                            <Text style={styles.userEmail}>{user.email}</Text>
+                                        </TouchableOpacity>
+                                    ))}
                             </ScrollView>
                             <TouchableOpacity
                                 style={styles.modalCloseButton}
-                                onPress={() => setShowUserPicker(false)}
+                                onPress={() => {
+                                    setShowUserPicker(false);
+                                    setSearchQuery('');
+                                }}
                             >
                                 <Text style={styles.modalCloseButtonText}>Cerrar</Text>
                             </TouchableOpacity>
@@ -810,6 +793,14 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#1F2937',
         marginBottom: 16,
+    },
+    searchInput: {
+        backgroundColor: '#F3F4F6',
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
     },
     userList: {
         maxHeight: 300,

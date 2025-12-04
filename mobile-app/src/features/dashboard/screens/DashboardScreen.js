@@ -9,6 +9,7 @@ import {
     Alert,
     Modal,
     TextInput,
+    Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import dashboardService from '../services/dashboardService';
@@ -18,17 +19,40 @@ const DashboardScreen = ({ navigation }) => {
     const [totalSales, setTotalSales] = useState(0);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+    // Helper to get local date string YYYY-MM-DD
+    const getLocalDate = () => {
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        const localDate = new Date(now.getTime() - offset);
+        return localDate.toISOString().split('T')[0];
+    };
+
+    // Filter State
+    const [filterMode, setFilterMode] = useState('single'); // 'single' | 'range'
+    const [selectedDate, setSelectedDate] = useState(getLocalDate());
+    const [startDate, setStartDate] = useState(getLocalDate());
+    const [endDate, setEndDate] = useState(getLocalDate());
+
+    // UI State
     const [modalVisible, setModalVisible] = useState(false);
-    const [tempDate, setTempDate] = useState(new Date().toISOString().split('T')[0]);
-    const [showHistoricalSales, setShowHistoricalSales] = useState(true);
+    const [tempStartDate, setTempStartDate] = useState('');
+    const [tempEndDate, setTempEndDate] = useState('');
+    const [showHistoricalSales, setShowHistoricalSales] = useState(false); // Hidden by default
 
     const loadDashboardData = async () => {
         try {
-            const [dailyData, totalData] = await Promise.all([
-                dashboardService.getDailySummary(selectedDate),
-                dashboardService.getTotalSales()
-            ]);
+            let dailyData;
+
+            if (filterMode === 'range') {
+                dailyData = await dashboardService.getSummaryByRange(startDate, endDate);
+            } else {
+                dailyData = await dashboardService.getDailySummary(selectedDate);
+            }
+
+            // Always load total historical sales
+            const totalData = await dashboardService.getTotalSales();
+
             setSummary(dailyData);
             setTotalSales(totalData.total_sales);
         } catch (error) {
@@ -41,21 +65,11 @@ const DashboardScreen = ({ navigation }) => {
 
     useEffect(() => {
         loadDashboardData();
-    }, [selectedDate]);
+    }, [selectedDate, startDate, endDate, filterMode]);
 
     const onRefresh = () => {
         setRefreshing(true);
         loadDashboardData();
-    };
-
-    const setToday = () => {
-        setSelectedDate(new Date().toISOString().split('T')[0]);
-    };
-
-    const setYesterday = () => {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        setSelectedDate(yesterday.toISOString().split('T')[0]);
     };
 
     const formatCurrency = (amount) => {
@@ -63,13 +77,46 @@ const DashboardScreen = ({ navigation }) => {
     };
 
     const formatDate = (dateString) => {
+        if (!dateString) return '';
         const date = new Date(dateString + 'T00:00:00');
         return date.toLocaleDateString('es-EC', {
-            weekday: 'long',
+            weekday: 'short',
             year: 'numeric',
-            month: 'long',
+            month: 'short',
             day: 'numeric',
         });
+    };
+
+    const handleOpenModal = () => {
+        if (filterMode === 'single') {
+            setTempStartDate(selectedDate);
+            setTempEndDate(selectedDate);
+        } else {
+            setTempStartDate(startDate);
+            setTempEndDate(endDate);
+        }
+        setModalVisible(true);
+    };
+
+    const handleApplyFilter = () => {
+        // Validate dates
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(tempStartDate) || !dateRegex.test(tempEndDate)) {
+            Alert.alert('Error', 'Formato de fecha inválido (YYYY-MM-DD)');
+            return;
+        }
+
+        if (filterMode === 'single') {
+            setSelectedDate(tempStartDate);
+        } else {
+            if (tempStartDate > tempEndDate) {
+                Alert.alert('Error', 'La fecha de inicio no puede ser mayor a la fecha fin');
+                return;
+            }
+            setStartDate(tempStartDate);
+            setEndDate(tempEndDate);
+        }
+        setModalVisible(false);
     };
 
     if (loading) {
@@ -97,39 +144,48 @@ const DashboardScreen = ({ navigation }) => {
                 {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>Dashboard</Text>
-                    <Text style={styles.headerSubtitle}>{formatDate(selectedDate)}</Text>
+                    <Text style={styles.headerSubtitle}>
+                        {filterMode === 'single'
+                            ? formatDate(selectedDate)
+                            : `${formatDate(startDate)} - ${formatDate(endDate)}`
+                        }
+                    </Text>
                 </View>
 
-                {/* Date Filter */}
+                {/* Date Filter Bar */}
                 <View style={styles.dateFilter}>
-                    <TouchableOpacity onPress={() => {
-                        const date = new Date(selectedDate);
-                        date.setDate(date.getDate() - 1);
-                        setSelectedDate(date.toISOString().split('T')[0]);
-                    }} style={styles.navButton}>
-                        <Text style={styles.navButtonText}>←</Text>
-                    </TouchableOpacity>
+                    {filterMode === 'single' && (
+                        <TouchableOpacity onPress={() => {
+                            const date = new Date(selectedDate);
+                            date.setDate(date.getDate() - 1);
+                            setSelectedDate(date.toISOString().split('T')[0]);
+                        }} style={styles.navButton}>
+                            <Text style={styles.navButtonText}>←</Text>
+                        </TouchableOpacity>
+                    )}
 
                     <TouchableOpacity
-                        style={styles.dateDisplay}
-                        onPress={() => setModalVisible(true)}
+                        style={[styles.dateDisplay, filterMode === 'range' && styles.dateDisplayRange]}
+                        onPress={handleOpenModal}
                     >
                         <Text style={styles.dateDisplayText}>
-                            {formatDate(selectedDate)}
+                            {filterMode === 'single' ? '📅 Un Día' : '🗓️ Rango de Fechas'}
                         </Text>
-                        <Text style={styles.dateSubtext}>Toca para cambiar</Text>
+                        <Text style={styles.dateSubtext}>Toca para configurar</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity onPress={() => {
-                        const date = new Date(selectedDate);
-                        date.setDate(date.getDate() + 1);
-                        setSelectedDate(date.toISOString().split('T')[0]);
-                    }} style={styles.navButton}>
-                        <Text style={styles.navButtonText}>→</Text>
-                    </TouchableOpacity>
+                    {filterMode === 'single' && (
+                        <TouchableOpacity onPress={() => {
+                            const date = new Date(selectedDate);
+                            date.setDate(date.getDate() + 1);
+                            setSelectedDate(date.toISOString().split('T')[0]);
+                        }} style={styles.navButton}>
+                            <Text style={styles.navButtonText}>→</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
-                {/* Date Selection Modal */}
+                {/* Filter Modal */}
                 <Modal
                     animationType="slide"
                     transparent={true}
@@ -138,16 +194,56 @@ const DashboardScreen = ({ navigation }) => {
                 >
                     <View style={styles.modalContainer}>
                         <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>Seleccionar Fecha</Text>
-                            <Text style={styles.modalSubtitle}>Formato: YYYY-MM-DD</Text>
+                            <Text style={styles.modalTitle}>Configurar Filtro</Text>
 
-                            <TextInput
-                                style={styles.input}
-                                value={tempDate}
-                                onChangeText={setTempDate}
-                                placeholder="2025-12-01"
-                                keyboardType="numeric"
-                            />
+                            {/* Mode Selector */}
+                            <View style={styles.modeSelector}>
+                                <TouchableOpacity
+                                    style={[styles.modeButton, filterMode === 'single' && styles.modeButtonActive]}
+                                    onPress={() => setFilterMode('single')}
+                                >
+                                    <Text style={[styles.modeButtonText, filterMode === 'single' && styles.modeButtonTextActive]}>
+                                        Un Día
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.modeButton, filterMode === 'range' && styles.modeButtonActive]}
+                                    onPress={() => setFilterMode('range')}
+                                >
+                                    <Text style={[styles.modeButtonText, filterMode === 'range' && styles.modeButtonTextActive]}>
+                                        Rango
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Date Inputs */}
+                            <View style={styles.inputsContainer}>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>
+                                        {filterMode === 'single' ? 'Fecha' : 'Desde'}
+                                    </Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={tempStartDate}
+                                        onChangeText={setTempStartDate}
+                                        placeholder="YYYY-MM-DD"
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+
+                                {filterMode === 'range' && (
+                                    <View style={styles.inputGroup}>
+                                        <Text style={styles.inputLabel}>Hasta</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            value={tempEndDate}
+                                            onChangeText={setTempEndDate}
+                                            placeholder="YYYY-MM-DD"
+                                            keyboardType="numeric"
+                                        />
+                                    </View>
+                                )}
+                            </View>
 
                             <View style={styles.modalButtons}>
                                 <TouchableOpacity
@@ -158,36 +254,16 @@ const DashboardScreen = ({ navigation }) => {
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={[styles.modalButton, styles.confirmButton]}
-                                    onPress={() => {
-                                        // Simple validation
-                                        if (/^\d{4}-\d{2}-\d{2}$/.test(tempDate)) {
-                                            setSelectedDate(tempDate);
-                                            setModalVisible(false);
-                                        } else {
-                                            Alert.alert('Error', 'Formato de fecha inválido');
-                                        }
-                                    }}
+                                    onPress={handleApplyFilter}
                                 >
-                                    <Text style={styles.confirmButtonText}>Confirmar</Text>
+                                    <Text style={styles.confirmButtonText}>Aplicar</Text>
                                 </TouchableOpacity>
                             </View>
-
-                            <TouchableOpacity
-                                style={styles.todayButton}
-                                onPress={() => {
-                                    const today = new Date().toISOString().split('T')[0];
-                                    setSelectedDate(today);
-                                    setTempDate(today);
-                                    setModalVisible(false);
-                                }}
-                            >
-                                <Text style={styles.todayButtonText}>Ir a Hoy</Text>
-                            </TouchableOpacity>
                         </View>
                     </View>
                 </Modal>
 
-                {/* Debtors Button */}
+                {/* Debtors & Customers Buttons */}
                 <View style={styles.actionContainer}>
                     <TouchableOpacity
                         style={styles.debtorsButton}
@@ -196,10 +272,18 @@ const DashboardScreen = ({ navigation }) => {
                         <Text style={styles.debtorsButtonText}>👥 Ver Deudores</Text>
                         <Text style={styles.debtorsButtonArrow}>›</Text>
                     </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.debtorsButton, { marginTop: 12 }]}
+                        onPress={() => navigation.navigate('Customers')}
+                    >
+                        <Text style={styles.debtorsButtonText}>🧑‍💼 Gestionar Clientes</Text>
+                        <Text style={styles.debtorsButtonArrow}>›</Text>
+                    </TouchableOpacity>
                 </View>
 
-                {/* All Time Sales */}
-                {showHistoricalSales && (
+                {/* Historical Sales (Hidden by default) */}
+                {showHistoricalSales ? (
                     <View style={[styles.primaryCard, { backgroundColor: '#4F46E5', marginBottom: 12 }]}>
                         <TouchableOpacity
                             style={styles.toggleButton}
@@ -207,15 +291,13 @@ const DashboardScreen = ({ navigation }) => {
                         >
                             <Text style={styles.toggleButtonText}>✕</Text>
                         </TouchableOpacity>
-                        <Text style={styles.primaryLabel}>Ventas Históricas</Text>
+                        <Text style={styles.primaryLabel}>Ventas Históricas Totales</Text>
                         <Text style={styles.primaryValue}>
                             {formatCurrency(totalSales)}
                         </Text>
-                        <Text style={styles.primarySubtext}>Acumulado total</Text>
+                        <Text style={styles.primarySubtext}>Acumulado desde el inicio</Text>
                     </View>
-                )}
-
-                {!showHistoricalSales && (
+                ) : (
                     <TouchableOpacity
                         style={styles.showHistoricalButton}
                         onPress={() => setShowHistoricalSales(true)}
@@ -224,13 +306,17 @@ const DashboardScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 )}
 
-                {/* Daily Sales */}
+                {/* Current Period Sales */}
                 <View style={styles.primaryCard}>
-                    <Text style={styles.primaryLabel}>Ventas del Día</Text>
+                    <Text style={styles.primaryLabel}>
+                        {filterMode === 'single' ? 'Ventas del Día' : 'Ventas del Periodo'}
+                    </Text>
                     <Text style={styles.primaryValue}>
                         {formatCurrency(summary?.totalSales || summary?.total_sales || 0)}
                     </Text>
-                    <Text style={styles.primarySubtext}>del día seleccionado</Text>
+                    <Text style={styles.primarySubtext}>
+                        {filterMode === 'single' ? 'del día seleccionado' : 'del rango seleccionado'}
+                    </Text>
                 </View>
 
                 {/* Secondary Metrics */}
@@ -278,13 +364,6 @@ const DashboardScreen = ({ navigation }) => {
                     <Text style={styles.sectionTitle}>Acciones de Administrador</Text>
                     <View style={styles.adminButtonsRow}>
                         <TouchableOpacity
-                            style={[styles.adminButton, { backgroundColor: '#EF4444' }]}
-                            onPress={() => navigation.navigate('Debtors')}
-                        >
-                            <Text style={styles.adminButtonIcon}>💰</Text>
-                            <Text style={styles.adminButtonText}>Ver Deudores</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
                             style={[styles.adminButton, { backgroundColor: '#3B82F6' }]}
                             onPress={() => navigation.navigate('AdminOrders')}
                         >
@@ -298,7 +377,7 @@ const DashboardScreen = ({ navigation }) => {
                 {summary?.topProducts && summary.topProducts.length > 0 && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Productos Más Vendidos</Text>
-                        {summary.topProducts.slice(0, 3).map((product, index) => (
+                        {summary.topProducts.slice(0, 5).map((product, index) => (
                             <View key={index} style={styles.productItem}>
                                 <View style={styles.productRank}>
                                     <Text style={styles.productRankText}>{index + 1}</Text>
@@ -361,9 +440,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         backgroundColor: 'white',
         marginBottom: 12,
+        gap: 12,
     },
     navButton: {
         padding: 10,
@@ -376,6 +456,7 @@ const styles = StyleSheet.create({
         color: '#1F2937',
     },
     dateDisplay: {
+        flex: 1,
         alignItems: 'center',
         paddingVertical: 8,
         paddingHorizontal: 16,
@@ -384,11 +465,14 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#FFEDD5',
     },
+    dateDisplayRange: {
+        backgroundColor: '#EFF6FF',
+        borderColor: '#BFDBFE',
+    },
     dateDisplayText: {
         fontSize: 16,
         fontWeight: 'bold',
         color: '#C2410C',
-        textTransform: 'capitalize',
     },
     dateSubtext: {
         fontSize: 10,
@@ -401,7 +485,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.5)',
     },
     modalContent: {
-        width: '80%',
+        width: '85%',
         backgroundColor: 'white',
         borderRadius: 16,
         padding: 24,
@@ -415,13 +499,52 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        marginBottom: 8,
+        marginBottom: 16,
         color: '#1F2937',
     },
-    modalSubtitle: {
+    modeSelector: {
+        flexDirection: 'row',
+        backgroundColor: '#F3F4F6',
+        borderRadius: 8,
+        padding: 4,
+        marginBottom: 20,
+        width: '100%',
+    },
+    modeButton: {
+        flex: 1,
+        paddingVertical: 8,
+        alignItems: 'center',
+        borderRadius: 6,
+    },
+    modeButtonActive: {
+        backgroundColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    modeButtonText: {
         fontSize: 14,
         color: '#6B7280',
-        marginBottom: 16,
+        fontWeight: '600',
+    },
+    modeButtonTextActive: {
+        color: '#1F2937',
+        fontWeight: 'bold',
+    },
+    inputsContainer: {
+        width: '100%',
+        marginBottom: 20,
+    },
+    inputGroup: {
+        marginBottom: 12,
+    },
+    inputLabel: {
+        fontSize: 14,
+        color: '#374151',
+        marginBottom: 6,
+        fontWeight: '500',
     },
     input: {
         width: '100%',
@@ -430,7 +553,6 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         padding: 12,
         fontSize: 16,
-        marginBottom: 20,
         textAlign: 'center',
     },
     modalButtons: {
@@ -457,14 +579,6 @@ const styles = StyleSheet.create({
     confirmButtonText: {
         color: 'white',
         fontWeight: 'bold',
-    },
-    todayButton: {
-        marginTop: 12,
-        padding: 8,
-    },
-    todayButtonText: {
-        color: '#FF6B00',
-        fontWeight: '600',
     },
     primaryCard: {
         marginHorizontal: 20,
@@ -599,6 +713,16 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 4,
         elevation: 2,
+    },
+    debtorsButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1F2937',
+    },
+    debtorsButtonArrow: {
+        fontSize: 20,
+        color: '#9CA3AF',
+        fontWeight: 'bold',
     },
     adminActionsSection: {
         marginTop: 12,

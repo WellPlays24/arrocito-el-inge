@@ -67,6 +67,42 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 </View>
 
+                {/* Community Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Comunidad</Text>
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => navigation.navigate('LoyalCustomers')}
+                    >
+                        <View style={styles.menuItemContent}>
+                            <Text style={styles.menuItemIcon}>🏆</Text>
+                            <Text style={styles.menuItemText}>Clientes Fieles</Text>
+                        </View>
+                        <Text style={styles.chevron}>›</Text>
+                    </TouchableOpacity>
+
+                    <View style={{ height: 12 }} />
+
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                            if (isAdmin()) {
+                                navigation.navigate('AdminRoulette');
+                            } else {
+                                navigation.navigate('Roulette');
+                            }
+                        }}
+                    >
+                        <View style={styles.menuItemContent}>
+                            <Text style={styles.menuItemIcon}>🎰</Text>
+                            <Text style={styles.menuItemText}>
+                                {isAdmin() ? 'Gestión Ruleta' : 'Ruleta Ganadora'}
+                            </Text>
+                        </View>
+                        <Text style={styles.chevron}>›</Text>
+                    </TouchableOpacity>
+                </View>
+
                 {/* My Orders Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Mis Pedidos</Text>
@@ -95,7 +131,7 @@ const ProfileScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
-                {/* My Orders Section */}
+                {/* Settings Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Configuración</Text>
                     <View style={styles.card}>

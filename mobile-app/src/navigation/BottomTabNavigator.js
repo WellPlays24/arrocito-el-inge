@@ -14,6 +14,8 @@ import CartScreen from '../features/cart/screens/CartScreen';
 import ProfileScreen from '../features/profile/screens/ProfileScreen';
 import DashboardScreen from '../features/dashboard/screens/DashboardScreen';
 import OrdersScreen from '../features/orders/screens/OrdersScreen';
+import AllOrdersScreen from '../features/orders/screens/AllOrdersScreen';
+import OrderHistoryScreen from '../features/orders/screens/OrderHistoryScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -48,7 +50,7 @@ export default function BottomTabNavigator({ navigation }) {
     );
 
     if (isAdmin()) {
-        // Admin tabs: Dashboard, Products, Orders, Profile
+        // Admin tabs: Dashboard, Products, Orders (create), Pedidos (list), Profile
         return (
             <>
                 <NotificationBanner
@@ -100,7 +102,17 @@ export default function BottomTabNavigator({ navigation }) {
                         name="Orders"
                         component={OrdersScreen}
                         options={{
-                            tabBarLabel: 'Órdenes',
+                            tabBarLabel: 'Crear',
+                            tabBarIcon: ({ color }) => (
+                                <Text style={{ fontSize: 24 }}>➕</Text>
+                            ),
+                        }}
+                    />
+                    <Tab.Screen
+                        name="AllOrders"
+                        component={AllOrdersScreen}
+                        options={{
+                            tabBarLabel: 'Pedidos',
                             tabBarIcon: ({ color }) => (
                                 <Text style={{ fontSize: 24 }}>📦</Text>
                             ),
@@ -128,7 +140,7 @@ export default function BottomTabNavigator({ navigation }) {
         );
     }
 
-    // Regular user tabs: Products, Cart, Profile
+    // Regular user tabs: Products, Mis Pedidos, Profile
     return (
         <>
             <NotificationBanner
@@ -182,6 +194,16 @@ export default function BottomTabNavigator({ navigation }) {
                             fontSize: 10,
                             fontWeight: 'bold',
                         },
+                    }}
+                />
+                <Tab.Screen
+                    name="MyOrders"
+                    component={OrderHistoryScreen}
+                    options={{
+                        tabBarLabel: 'Mis Pedidos',
+                        tabBarIcon: ({ color }) => (
+                            <Text style={{ fontSize: 24 }}>📦</Text>
+                        ),
                     }}
                 />
                 <Tab.Screen

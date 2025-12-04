@@ -37,8 +37,21 @@ const getTotalSales = async () => {
     }
 };
 
+const getSummaryByRange = async (from, to) => {
+    try {
+        const response = await api.get('/daily-summary/range', {
+            params: { from, to }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Get range summary error:', error.response?.data || error.message);
+        throw error.response?.data || { message: 'Error al cargar resumen por rango' };
+    }
+};
+
 export default {
     getDailySummary,
     getDailyExpenses,
     getTotalSales,
+    getSummaryByRange,
 };

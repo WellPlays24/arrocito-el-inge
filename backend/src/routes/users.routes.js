@@ -1,6 +1,6 @@
 // src/routes/users.routes.js
 const express = require('express');
-const { getAllUsers, getUserById, createUser, updateUser, deleteUser, getDebtors } = require('../controllers/users.controller');
+const { getAllUsers, getUserById, createUser, updateUser, deleteUser, getDebtors, getLoyalCustomers } = require('../controllers/users.controller');
 const { authRequired, roleRequired } = require('../middleware/auth.middleware');
 
 
@@ -14,6 +14,11 @@ router.get('/', authRequired, roleRequired('admin'), getAllUsers);
 // Obtener deudores (antes de /:id para evitar conflictos)
 // GET /api/users/debtors
 router.get('/debtors', authRequired, roleRequired('admin'), getDebtors);
+
+// Obtener clientes fieles (Top 10)
+// GET /api/users/loyal-customers
+// Accesible para admin y client (todos los usuarios autenticados)
+router.get('/loyal-customers', authRequired, getLoyalCustomers);
 
 
 // Obtener usuario por id

@@ -17,7 +17,6 @@ const AddProductScreen = ({ navigation }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState('');
-    const [stock, setStock] = useState('');
     const [imageUrl, setImageUrl] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -38,7 +37,6 @@ const AddProductScreen = ({ navigation }) => {
                 name: name.trim(),
                 description: description.trim() || null,
                 price: parseFloat(price),
-                stock: stock ? parseInt(stock) : 0,
                 image_url: imageUrl.trim() || null,
                 is_active: true,
             };
@@ -106,18 +104,6 @@ const AddProductScreen = ({ navigation }) => {
                             value={price}
                             onChangeText={setPrice}
                             keyboardType="decimal-pad"
-                        />
-                    </View>
-
-                    {/* Stock */}
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Stock</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="0"
-                            value={stock}
-                            onChangeText={setStock}
-                            keyboardType="number-pad"
                         />
                     </View>
 

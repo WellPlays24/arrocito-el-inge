@@ -20,11 +20,13 @@ const RegisterScreen = ({ navigation }) => {
         name: '',
         cedula: '',
         phone: '',
+        dateOfBirth: '',
         email: '',
         password: '',
     });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const updateField = (field, value) => {
         setFormData({ ...formData, [field]: value });
@@ -116,7 +118,7 @@ const RegisterScreen = ({ navigation }) => {
                         {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
 
                         {/* Cédula */}
-                        <Text style={styles.label}>Cédula (Opcional)</Text>
+                        <Text style={styles.label}>Cédula *</Text>
                         <TextInput
                             style={[styles.input, errors.cedula && styles.inputError]}
                             placeholder="0123456789"
@@ -129,7 +131,7 @@ const RegisterScreen = ({ navigation }) => {
                         {errors.cedula && <Text style={styles.errorText}>{errors.cedula}</Text>}
 
                         {/* Teléfono */}
-                        <Text style={styles.label}>Teléfono (Opcional)</Text>
+                        <Text style={styles.label}>Teléfono *</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="0987654321"
@@ -154,14 +156,24 @@ const RegisterScreen = ({ navigation }) => {
 
                         {/* Password */}
                         <Text style={styles.label}>Contraseña *</Text>
-                        <TextInput
-                            style={[styles.input, errors.password && styles.inputError]}
-                            placeholder="Mínimo 6 caracteres"
-                            placeholderTextColor="#999"
-                            secureTextEntry={true}
-                            value={formData.password}
-                            onChangeText={(value) => updateField('password', value)}
-                        />
+                        <View style={[styles.passwordContainer, errors.password && styles.inputError]}>
+                            <TextInput
+                                style={styles.passwordInput}
+                                placeholder="Mínimo 6 caracteres"
+                                placeholderTextColor="#999"
+                                secureTextEntry={!showPassword}
+                                value={formData.password}
+                                onChangeText={(value) => updateField('password', value)}
+                            />
+                            <TouchableOpacity
+                                onPress={() => setShowPassword(!showPassword)}
+                                style={styles.eyeIcon}
+                            >
+                                <Text style={styles.eyeText}>
+                                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                         {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
                         <TouchableOpacity
@@ -240,6 +252,28 @@ const styles = StyleSheet.create({
         color: '#1F2937',
         borderWidth: 1,
         borderColor: 'transparent',
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F3F4F6',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    passwordInput: {
+        flex: 1,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        fontSize: 16,
+        color: '#1F2937',
+    },
+    eyeIcon: {
+        paddingRight: 12,
+        paddingLeft: 8,
+    },
+    eyeText: {
+        fontSize: 20,
     },
     inputError: {
         borderColor: '#EF4444',

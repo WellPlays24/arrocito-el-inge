@@ -237,6 +237,34 @@ async function getDebtors(req, res) {
   }
 }
 
+// GET /api/users/loyal-customers
+// Retorna el top 10 de clientes con más pedidos completados
+async function getLoyalCustomers(req, res) {
+  try {
+    const result = await db.query(
+      `
+      SELECT
+        u.id,
+        u.name,
+        u.email,
+        COUNT(o.id) AS completed_orders_count,
+        COALESCE(SUM(o.total_amount), 0) AS total_spent
+      FROM users u
+      JOIN orders o ON o.user_id = u.id
+      WHERE o.status = 'completed' AND u.role = 'client'
+      GROUP BY u.id, u.name, u.email
+      ORDER BY completed_orders_count DESC, total_spent DESC
+      LIMIT 10
+      `
+    );
+
+    return res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener clientes fieles:', error);
+    return res.status(500).json({ message: 'Error al obtener clientes fieles' });
+  }
+}
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -244,4 +272,5 @@ module.exports = {
   updateUser,
   deleteUser,
   getDebtors,
+  getLoyalCustomers,
 };

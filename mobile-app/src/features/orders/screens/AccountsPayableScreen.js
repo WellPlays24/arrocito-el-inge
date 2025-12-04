@@ -10,8 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ordersService from '../services/ordersService';
+import { useAuth } from '../../../context/AuthContext';
 
 const AccountsPayableScreen = ({ navigation }) => {
+    const { isAdmin } = useAuth();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -104,11 +106,18 @@ const AccountsPayableScreen = ({ navigation }) => {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#FF6B00']} />
                 }
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyIcon}>🎉</Text>
-                        <Text style={styles.emptyText}>¡Estás al día!</Text>
-                        <Text style={styles.emptySubtext}>No tienes cuentas pendientes por pagar.</Text>
-                    </View>
+                    !isAdmin() ? (
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyIcon}>🎉</Text>
+                            <Text style={styles.emptyText}>¡Estás al día!</Text>
+                            <Text style={styles.emptySubtext}>No tienes cuentas pendientes por pagar.</Text>
+                        </View>
+                    ) : (
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyIcon}>📋</Text>
+                            <Text style={styles.emptyText}>No hay cuentas pendientes</Text>
+                        </View>
+                    )
                 }
             />
         </SafeAreaView>

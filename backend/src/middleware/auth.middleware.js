@@ -40,7 +40,10 @@ function roleRequired(role) {
   };
 }
 
+const verifyAdmin = roleRequired('admin');
+
 module.exports = {
   authRequired,
   roleRequired,
+  verifyAdmin,
 };

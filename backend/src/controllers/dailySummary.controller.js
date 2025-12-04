@@ -207,9 +207,95 @@ async function getTotalSales(req, res) {
   }
 }
 
+// GET /api/daily-summary/range
+// Query: ?from=2025-11-01&to=2025-11-30
+async function getDailySummaryRange(req, res) {
+  try {
+    const { from, to } = req.query;
+
+    if (!from || !to) {
+      return res.status(400).json({ message: 'from y to son obligatorios' });
+    }
+
+    // 1. Calculate aggregated metrics from orders
+    const ordersRes = await db.query(
+      `
+      SELECT 
+        COUNT(*) FILTER (WHERE status = 'completed') AS completed_orders,
+        COUNT(*) FILTER (WHERE status = 'pending') AS pending_orders,
+        COUNT(*) AS total_orders,
+        COALESCE(SUM(total_amount) FILTER (WHERE status = 'completed'), 0) AS total_sales
+      FROM orders
+      WHERE DATE(order_date) >= $1 AND DATE(order_date) <= $2
+      `,
+      [from, to]
+    );
+
+    // 2. Calculate aggregated expenses
+    const expensesRes = await db.query(
+      `
+      SELECT COALESCE(SUM(amount), 0) AS total_expenses
+      FROM daily_expenses
+      WHERE date >= $1 AND date <= $2
+      `,
+      [from, to]
+    );
+
+    // 3. Calculate top products for the range
+    const topProductsRes = await db.query(
+      `
+      SELECT 
+        p.name,
+        SUM(oi.quantity) as quantity,
+        SUM(oi.subtotal) as total
+      FROM order_items oi
+      JOIN orders o ON o.id = oi.order_id
+      JOIN products p ON p.id = oi.product_id
+      WHERE o.status = 'completed'
+        AND DATE(o.order_date) >= $1 
+        AND DATE(o.order_date) <= $2
+      GROUP BY p.id, p.name
+      ORDER BY quantity DESC
+      LIMIT 5
+      `,
+      [from, to]
+    );
+
+    const totalSales = Number(ordersRes.rows[0].total_sales) || 0;
+    const totalExpenses = Number(expensesRes.rows[0].total_expenses) || 0;
+    const netProfit = totalSales - totalExpenses;
+    const totalOrders = Number(ordersRes.rows[0].total_orders) || 0;
+    const completedOrders = Number(ordersRes.rows[0].completed_orders) || 0;
+    const pendingOrders = Number(ordersRes.rows[0].pending_orders) || 0;
+
+    return res.json({
+      from,
+      to,
+      totalSales,
+      total_sales: totalSales,
+      totalExpenses,
+      total_expenses: totalExpenses,
+      netProfit,
+      net_profit: netProfit,
+      totalOrders,
+      total_orders: totalOrders,
+      completedOrders,
+      completed_orders: completedOrders,
+      pendingOrders,
+      pending_orders: pendingOrders,
+      topProducts: topProductsRes.rows
+    });
+
+  } catch (error) {
+    console.error('Error al obtener resumen por rango:', error);
+    return res.status(500).json({ message: 'Error al obtener resumen por rango' });
+  }
+}
+
 module.exports = {
   getDailySummaryList,
   getDailySummaryByDate,
+  getDailySummaryRange,
   recalculateDailySummary,
   deleteDailySummary,
   calculateAndSaveDailySummary,

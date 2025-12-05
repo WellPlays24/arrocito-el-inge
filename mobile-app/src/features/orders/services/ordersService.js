@@ -7,6 +7,10 @@ const getOrders = async (filters = {}) => {
         });
         return response.data;
     } catch (error) {
+        // Silently ignore cancelled requests (no token)
+        if (error.silent || error.__CANCEL__) {
+            return [];
+        }
         console.error('Get orders error:', error.response?.data || error.message);
         throw error.response?.data || { message: 'Error al cargar órdenes' };
     }
@@ -17,6 +21,10 @@ const getMyOrders = async () => {
         const response = await api.get('/orders');
         return response.data;
     } catch (error) {
+        // Silently ignore cancelled requests (no token)
+        if (error.silent || error.__CANCEL__) {
+            return [];
+        }
         console.error('Get my orders error:', error.response?.data || error.message);
         throw error.response?.data || { message: 'Error al cargar mis órdenes' };
     }

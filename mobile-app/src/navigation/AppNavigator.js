@@ -18,6 +18,9 @@ import EditCustomerScreen from '../features/customers/screens/EditCustomerScreen
 import LoyalCustomersScreen from '../features/customers/screens/LoyalCustomersScreen';
 import RouletteScreen from '../features/roulette/screens/RouletteScreen';
 import AdminRouletteScreen from '../features/roulette/screens/AdminRouletteScreen';
+import PrizesManagementScreen from '../features/roulette/screens/PrizesManagementScreen';
+import GrantHistoryScreen from '../features/roulette/screens/GrantHistoryScreen';
+import SpinLogsScreen from '../features/roulette/screens/SpinLogsScreen';
 import BottomTabNavigator from './BottomTabNavigator';
 import { useAuth } from '../context/AuthContext';
 
@@ -60,6 +63,9 @@ function MainStack() {
             <Stack.Screen name="LoyalCustomers" component={LoyalCustomersScreen} />
             <Stack.Screen name="Roulette" component={RouletteScreen} />
             <Stack.Screen name="AdminRoulette" component={AdminRouletteScreen} />
+            <Stack.Screen name="PrizesManagement" component={PrizesManagementScreen} />
+            <Stack.Screen name="GrantHistory" component={GrantHistoryScreen} />
+            <Stack.Screen name="SpinLogs" component={SpinLogsScreen} />
         </Stack.Navigator>
     );
 }

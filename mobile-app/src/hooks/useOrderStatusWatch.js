@@ -11,6 +11,9 @@ export const useOrderStatusWatch = (userId, onOrderReady) => {
 
         const fetchUserOrders = async () => {
             try {
+                // Don't fetch if no userId (user logged out)
+                if (!userId) return;
+
                 const userOrders = await ordersService.getOrders({ userId });
                 setOrders(userOrders);
 
@@ -29,7 +32,10 @@ export const useOrderStatusWatch = (userId, onOrderReady) => {
                     previousStatusesRef.current[order.id] = order.status;
                 });
             } catch (error) {
-                console.error('Error fetching user orders:', error);
+                // Silently fail if token error (user logged out)
+                if (!error.message?.includes('Token')) {
+                    console.error('Error fetching user orders:', error);
+                }
             }
         };
 

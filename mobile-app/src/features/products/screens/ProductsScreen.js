@@ -20,7 +20,7 @@ const ProductsScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const { addToCart } = useCart();
-    const { isAdmin } = useAuth();
+    const { isAdmin, user } = useAuth();
 
     const loadProducts = async () => {
         try {
@@ -117,14 +117,38 @@ const ProductsScreen = ({ navigation }) => {
     );
 
     // CUSTOMER VIEW
-    const renderCustomerHeader = () => (
-        <View style={styles.header}>
-            <View>
-                <Text style={styles.greeting}>Hola! 👋</Text>
+    const renderCustomerHeader = () => {
+        const now = new Date();
+
+        // Format time
+        const timeString = now.toLocaleTimeString('es-EC', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+
+        // Format date
+        const dateString = now.toLocaleDateString('es-EC', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+
+        // Get first name only
+        //const firstName = user?.name?.split(' ')[0] || 'Cliente';
+
+        return (
+            <View style={styles.header}>
+                <View style={styles.greetingContainer}>
+                    <Text style={styles.greeting}>¡Hola, {user.name}! 👋</Text>
+                    <Text style={styles.dateTime}>{dateString}</Text>
+                    <Text style={styles.time}>{timeString}</Text>
+                </View>
                 <Text style={styles.title}>¿Qué te gustaría ordenar?</Text>
             </View>
-        </View>
-    );
+        );
+    };
 
     if (loading) {
         return (
@@ -200,24 +224,36 @@ const styles = StyleSheet.create({
     },
     // Customer styles
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        flexDirection: 'column',
         paddingHorizontal: 20,
         paddingVertical: 16,
         backgroundColor: 'white',
         borderBottomWidth: 1,
         borderBottomColor: '#E5E7EB',
     },
-    greeting: {
-        fontSize: 14,
-        color: '#6B7280',
+    greetingContainer: {
+        marginBottom: 12,
     },
-    title: {
-        fontSize: 20,
+    greeting: {
+        fontSize: 18,
         fontWeight: 'bold',
         color: '#1F2937',
-        marginTop: 4,
+        marginBottom: 4,
+    },
+    dateTime: {
+        fontSize: 13,
+        color: '#6B7280',
+        textTransform: 'capitalize',
+    },
+    time: {
+        fontSize: 12,
+        color: '#9CA3AF',
+        marginTop: 2,
+    },
+    title: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#4B5563',
     },
     listContent: {
         padding: 16,

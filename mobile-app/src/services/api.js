@@ -18,12 +18,42 @@ const api = axios.create({
 api.interceptors.request.use(
     async (config) => {
         const token = await AsyncStorage.getItem('token');
-        if (token) {
+
+        // If no token and not a public endpoint, reject the request
+        if (!token) {
+            // Allow only public endpoints without token
+            const publicEndpoints = ['/auth/login', '/auth/register'];
+            const isPublicEndpoint = publicEndpoints.some(endpoint =>
+                config.url.includes(endpoint)
+            );
+
+            if (!isPublicEndpoint) {
+                // Cancel the request silently
+                return Promise.reject({
+                    message: 'No token available',
+                    config,
+                    __CANCEL__: true
+                });
+            }
+        } else {
             config.headers.Authorization = `Bearer ${token}`;
         }
+
         return config;
     },
     (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Response interceptor for handling errors
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        // Silently ignore cancelled requests
+        if (error.__CANCEL__) {
+            return Promise.reject({ message: 'Request cancelled', silent: true });
+        }
         return Promise.reject(error);
     }
 );

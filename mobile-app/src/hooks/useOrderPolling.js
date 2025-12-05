@@ -11,6 +11,9 @@ export const useOrderPolling = (isAdmin, onNewOrder) => {
 
         const fetchPendingOrders = async () => {
             try {
+                // Don't fetch if not admin (user logged out or not admin)
+                if (!isAdmin) return;
+
                 const orders = await ordersService.getOrders({ status: 'pending' });
                 const count = orders.length;
 
@@ -26,7 +29,10 @@ export const useOrderPolling = (isAdmin, onNewOrder) => {
 
                 previousCountRef.current = count;
             } catch (error) {
-                console.error('Error fetching pending orders:', error);
+                // Silently fail if token error (user logged out)
+                if (!error.message?.includes('Token')) {
+                    console.error('Error fetching pending orders:', error);
+                }
             }
         };
 

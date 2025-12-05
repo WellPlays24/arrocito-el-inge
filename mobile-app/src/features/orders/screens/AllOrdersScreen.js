@@ -10,22 +10,32 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ordersService from '../services/ordersService';
+import DateRangePicker from '../../../components/DateRangePicker';
 
 const AllOrdersScreen = ({ navigation }) => {
+    const getTodayString = () => {
+        const today = new Date();
+        return today.toISOString().split('T')[0];
+    };
+
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [filter, setFilter] = useState('all');
+    const [startDate, setStartDate] = useState(getTodayString());
+    const [endDate, setEndDate] = useState(getTodayString());
 
     useEffect(() => {
         loadOrders();
-    }, [filter]);
+    }, [filter, startDate, endDate]);
 
     const loadOrders = async () => {
         try {
-            const data = await ordersService.getOrders(
-                filter !== 'all' ? { status: filter } : {}
-            );
+            const params = filter !== 'all' ? { status: filter } : {};
+            if (startDate) params.startDate = startDate;
+            if (endDate) params.endDate = endDate;
+
+            const data = await ordersService.getOrders(params);
             setOrders(data);
         } catch (error) {
             Alert.alert('Error', error.message || 'No se pudieron cargar las órdenes');
@@ -148,6 +158,14 @@ const AllOrdersScreen = ({ navigation }) => {
                     </Text>
                 </TouchableOpacity>
             </View>
+
+            {/* Date Filter */}
+            <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+            />
 
             {/* Orders List */}
             <FlatList

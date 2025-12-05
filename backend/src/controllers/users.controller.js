@@ -103,7 +103,20 @@ async function createUser(req, res) {
       [name, phone || null, email, passwordHash, role, cedula || null, date_of_birth || null]
     );
 
-    return res.status(201).json(result.rows[0]);
+    const newUser = result.rows[0];
+
+    // Log customer creation by admin
+    try {
+      await db.query(
+        `INSERT INTO customer_management_logs (customer_id, action_type, performed_by, performed_by_name, performed_by_role, changes_made, log_date)
+         VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)`,
+        [newUser.id, 'created', req.user.id, req.user.name, req.user.role, JSON.stringify({ type: 'admin_creation', role: newUser.role })]
+      );
+    } catch (logError) {
+      console.error('Error recording customer log:', logError);
+    }
+
+    return res.status(201).json(newUser);
   } catch (error) {
     console.error('Error al crear usuario:', error);
     return res.status(500).json({ message: 'Error al crear usuario' });
@@ -179,7 +192,25 @@ async function updateUser(req, res) {
       ]
     );
 
-    return res.json(result.rows[0]);
+    const updatedUser = result.rows[0];
+
+    // Log customer update
+    try {
+      const changes = { name, phone, role, cedula, date_of_birth, password_changed: !!password };
+      const performedBy = req.user ? req.user.id : parseInt(id);
+      const performedByName = req.user ? req.user.name : updatedUser.name;
+      const performedByRole = req.user ? req.user.role : 'client';
+
+      await db.query(
+        `INSERT INTO customer_management_logs (customer_id, action_type, performed_by, performed_by_name, performed_by_role, changes_made, log_date)
+         VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)`,
+        [id, 'updated', performedBy, performedByName, performedByRole, JSON.stringify(changes)]
+      );
+    } catch (logError) {
+      console.error('Error recording customer log:', logError);
+    }
+
+    return res.json(updatedUser);
   } catch (error) {
     console.error('Error al actualizar usuario:', error);
     return res.status(500).json({ message: 'Error al actualizar usuario' });
@@ -192,15 +223,34 @@ async function deleteUser(req, res) {
   try {
     const { id } = req.params;
 
+    // Get user info before deletion
+    const userInfo = await db.query(
+      'SELECT id, name, email, role FROM users WHERE id = $1',
+      [id]
+    );
+
+    if (userInfo.rowCount === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    const deletedUser = userInfo.rows[0];
+
+    // Log customer deletion
+    try {
+      await db.query(
+        `INSERT INTO customer_management_logs (customer_id, action_type, performed_by, performed_by_name, performed_by_role, changes_made, log_date)
+         VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)`,
+        [id, 'deleted', req.user.id, req.user.name, req.user.role, JSON.stringify({ deleted_user: deletedUser })]
+      );
+    } catch (logError) {
+      console.error('Error recording customer log:', logError);
+    }
+
     // Si el usuario tiene pedidos o deudas, esta eliminación podría fallar por FK
     const result = await db.query(
       'DELETE FROM users WHERE id = $1',
       [id]
     );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
 
     return res.json({ message: 'Usuario eliminado correctamente' });
   } catch (error) {

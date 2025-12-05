@@ -438,7 +438,12 @@ const OrdersScreen = ({ navigation }) => {
                 <Text style={styles.headerTitle}>Mis Órdenes</Text>
             </View>
 
-            <View style={styles.filterTabs}>
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.filterTabs}
+                contentContainerStyle={{ paddingRight: 16 }}
+            >
                 <TouchableOpacity
                     style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
                     onPress={() => setFilter('all')}
@@ -463,7 +468,7 @@ const OrdersScreen = ({ navigation }) => {
                         Completadas
                     </Text>
                 </TouchableOpacity>
-            </View>
+            </ScrollView>
 
             <FlatList
                 data={orders}

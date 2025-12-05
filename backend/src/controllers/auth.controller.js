@@ -82,6 +82,17 @@ async function register(req, res, next) {
 
     const user = result.rows[0];
 
+    // Log customer self-registration
+    try {
+      await db.query(
+        `INSERT INTO customer_management_logs (customer_id, action_type, performed_by, performed_by_name, performed_by_role, changes_made, log_date)
+         VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)`,
+        [user.id, 'created', user.id, user.name, 'client', JSON.stringify({ type: 'self_registration', email: user.email })]
+      );
+    } catch (logError) {
+      console.error('Error recording customer log:', logError);
+    }
+
     const token = generateToken(user);
 
     return res.status(201).json({
@@ -106,8 +117,8 @@ async function login(req, res) {
 
     const userRes = await db.query(
       `SELECT id, name, phone, email, password_hash, role
-       FROM users
-       WHERE email = $1`,
+             FROM users
+             WHERE email = $1`,
       [email]
     );
 
@@ -126,6 +137,18 @@ async function login(req, res) {
     delete user.password_hash;
 
     const token = generateToken(user);
+
+    // Record login log
+    try {
+      await db.query(
+        `INSERT INTO login_logs (user_id, user_name, user_role, login_date)
+                 VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`,
+        [user.id, user.name, user.role]
+      );
+    } catch (logError) {
+      console.error('Error recording login log:', logError);
+      // Don't fail login if log recording fails
+    }
 
     return res.json({
       message: 'Login exitoso',
@@ -154,9 +177,77 @@ async function me(req, res) {
   }
 }
 
+// GET /api/login-logs - Get all login logs (admin only)
+async function getLoginLogs(req, res) {
+  try {
+    const { startDate, endDate } = req.query;
+
+    let query = `
+      SELECT 
+        ll.id,
+        ll.user_name,
+        ll.user_role,
+        ll.login_date,
+        ll.user_id
+      FROM login_logs ll
+    `;
+
+    const params = [];
+    const conditions = [];
+
+    if (startDate) {
+      conditions.push(`ll.login_date >= $${params.length + 1}::date`);
+      params.push(startDate);
+    }
+
+    if (endDate) {
+      conditions.push(`ll.login_date < ($${params.length + 1}::date + interval '1 day')`);
+      params.push(endDate);
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    query += ' ORDER BY ll.login_date DESC LIMIT 200';
+
+    const result = await db.query(query, params);
+
+    return res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener logs de login:', error);
+    return res.status(500).json({ message: 'Error al obtener logs' });
+  }
+}
+
+// GET /api/login-logs/user/:userId - Get login logs for specific user (admin only)
+async function getLoginLogsByUser(req, res) {
+  try {
+    const { userId } = req.params;
+
+    const result = await db.query(`
+            SELECT 
+                ll.id,
+                ll.user_name,
+                ll.user_role,
+                ll.login_date
+            FROM login_logs ll
+            WHERE ll.user_id = $1
+            ORDER BY ll.login_date DESC
+        `, [userId]);
+
+    return res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener logs de usuario:', error);
+    return res.status(500).json({ message: 'Error al obtener logs' });
+  }
+}
+
 
 module.exports = {
   register,
   login,
   me,
+  getLoginLogs,
+  getLoginLogsByUser,
 };

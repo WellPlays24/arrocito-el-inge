@@ -297,7 +297,9 @@ async function deletePrize(req, res) {
 // GET /api/roulette/grants/history - Get all spin grant history
 async function getGrantHistory(req, res) {
     try {
-        const result = await db.query(`
+        const { startDate, endDate } = req.query;
+
+        let query = `
             SELECT 
                 sg.id,
                 sg.spins_granted,
@@ -309,9 +311,28 @@ async function getGrantHistory(req, res) {
             FROM roulette_spin_grants sg
             JOIN users a ON a.id = sg.admin_id
             JOIN users u ON u.id = sg.user_id
-            ORDER BY sg.created_at DESC
-            LIMIT 100
-        `);
+        `;
+
+        const params = [];
+        const conditions = [];
+
+        if (startDate) {
+            conditions.push(`sg.created_at >= $${params.length + 1}::date`);
+            params.push(startDate);
+        }
+
+        if (endDate) {
+            conditions.push(`sg.created_at < ($${params.length + 1}::date + interval '1 day')`);
+            params.push(endDate);
+        }
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
+        }
+
+        query += ' ORDER BY sg.created_at DESC LIMIT 100';
+
+        const result = await db.query(query, params);
 
         return res.json(result.rows);
     } catch (error) {
@@ -348,7 +369,9 @@ async function getGrantHistoryByUser(req, res) {
 // GET /api/roulette/logs - Get all spin logs
 async function getSpinLogs(req, res) {
     try {
-        const result = await db.query(`
+        const { startDate, endDate } = req.query;
+
+        let query = `
             SELECT 
                 sl.id,
                 sl.prize_name,
@@ -358,9 +381,28 @@ async function getSpinLogs(req, res) {
                 u.id AS user_id
             FROM roulette_spin_logs sl
             JOIN users u ON u.id = sl.user_id
-            ORDER BY sl.spin_date DESC
-            LIMIT 200
-        `);
+        `;
+
+        const params = [];
+        const conditions = [];
+
+        if (startDate) {
+            conditions.push(`sl.spin_date >= $${params.length + 1}::date`);
+            params.push(startDate);
+        }
+
+        if (endDate) {
+            conditions.push(`sl.spin_date < ($${params.length + 1}::date + interval '1 day')`);
+            params.push(endDate);
+        }
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
+        }
+
+        query += ' ORDER BY sl.spin_date DESC LIMIT 200';
+
+        const result = await db.query(query, params);
 
         return res.json(result.rows);
     } catch (error) {

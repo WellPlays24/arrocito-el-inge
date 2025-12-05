@@ -70,9 +70,13 @@ const deletePrize = async (id) => {
     }
 };
 
-const getGrantHistory = async () => {
+const getGrantHistory = async (startDate, endDate) => {
     try {
-        const response = await api.get('/roulette/grants/history');
+        const params = {};
+        if (startDate) params.startDate = startDate;
+        if (endDate) params.endDate = endDate;
+
+        const response = await api.get('/roulette/grants/history', { params });
         return response.data;
     } catch (error) {
         console.error('Get grant history error:', error.response?.data || error.message);
@@ -90,9 +94,13 @@ const getGrantHistoryByUser = async (userId) => {
     }
 };
 
-const getSpinLogs = async () => {
+const getSpinLogs = async (startDate, endDate) => {
     try {
-        const response = await api.get('/roulette/logs');
+        const params = {};
+        if (startDate) params.startDate = startDate;
+        if (endDate) params.endDate = endDate;
+
+        const response = await api.get('/roulette/logs', { params });
         return response.data;
     } catch (error) {
         console.error('Get spin logs error:', error.response?.data || error.message);

@@ -21,6 +21,10 @@ import AdminRouletteScreen from '../features/roulette/screens/AdminRouletteScree
 import PrizesManagementScreen from '../features/roulette/screens/PrizesManagementScreen';
 import GrantHistoryScreen from '../features/roulette/screens/GrantHistoryScreen';
 import SpinLogsScreen from '../features/roulette/screens/SpinLogsScreen';
+import LoginLogsScreen from '../screens/LoginLogsScreen';
+import CustomerLogsScreen from '../screens/CustomerLogsScreen';
+import OrderStatusLogsScreen from '../screens/OrderStatusLogsScreen';
+import OrderCreationLogsScreen from '../screens/OrderCreationLogsScreen';
 import BottomTabNavigator from './BottomTabNavigator';
 import { useAuth } from '../context/AuthContext';
 
@@ -66,6 +70,10 @@ function MainStack() {
             <Stack.Screen name="PrizesManagement" component={PrizesManagementScreen} />
             <Stack.Screen name="GrantHistory" component={GrantHistoryScreen} />
             <Stack.Screen name="SpinLogs" component={SpinLogsScreen} />
+            <Stack.Screen name="LoginLogs" component={LoginLogsScreen} />
+            <Stack.Screen name="CustomerLogs" component={CustomerLogsScreen} />
+            <Stack.Screen name="OrderStatusLogs" component={OrderStatusLogsScreen} />
+            <Stack.Screen name="OrderCreationLogs" component={OrderCreationLogsScreen} />
         </Stack.Navigator>
     );
 }

@@ -126,20 +126,6 @@ const AdminRouletteScreen = ({ navigation }) => {
                 <Text style={styles.prizesButtonText}>⚙️ Gestionar Premios</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-                style={styles.historyButton}
-                onPress={() => navigation.navigate('GrantHistory')}
-            >
-                <Text style={styles.historyButtonText}>📊 Ver Historial de Giros</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={styles.logsButton}
-                onPress={() => navigation.navigate('SpinLogs')}
-            >
-                <Text style={styles.logsButtonText}>📋 Ver Logs de Ruleta</Text>
-            </TouchableOpacity>
-
             <FlatList
                 data={filteredUsers}
                 keyExtractor={(item) => item.id.toString()}
@@ -250,32 +236,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     prizesButtonText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-    historyButton: {
-        backgroundColor: '#3B82F6',
-        marginHorizontal: 16,
-        marginBottom: 12,
-        padding: 14,
-        borderRadius: 12,
-        alignItems: 'center',
-    },
-    historyButtonText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-    logsButton: {
-        backgroundColor: '#10B981',
-        marginHorizontal: 16,
-        marginBottom: 12,
-        padding: 14,
-        borderRadius: 12,
-        alignItems: 'center',
-    },
-    logsButtonText: {
         color: 'white',
         fontSize: 14,
         fontWeight: 'bold',

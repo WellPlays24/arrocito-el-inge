@@ -23,6 +23,8 @@ router.use('/users', usersRoutes);
 router.use('/daily-expenses', dailyExpensesRoutes);
 router.use('/daily-summary', dailySummaryRoutes);
 router.use('/roulette', require('./roulette.routes'));
+router.use('/login-logs', require('./loginLogs.routes'));
+router.use('/logs', require('./logs.routes'));
 
 
 

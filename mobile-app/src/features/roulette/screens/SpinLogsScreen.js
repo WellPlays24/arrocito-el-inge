@@ -11,18 +11,26 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import rouletteService from '../services/rouletteService';
+import DateRangePicker from '../../../components/DateRangePicker';
 
 const SpinLogsScreen = ({ navigation }) => {
+    const getTodayString = () => {
+        const today = new Date();
+        return today.toISOString().split('T')[0];
+    };
+
     const [logs, setLogs] = useState([]);
     const [filteredLogs, setFilteredLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterWinners, setFilterWinners] = useState('all'); // 'all', 'winners', 'losers'
+    const [startDate, setStartDate] = useState(getTodayString());
+    const [endDate, setEndDate] = useState(getTodayString());
 
     useEffect(() => {
         loadLogs();
-    }, []);
+    }, [startDate, endDate]);
 
     useEffect(() => {
         applyFilters();
@@ -30,7 +38,7 @@ const SpinLogsScreen = ({ navigation }) => {
 
     const loadLogs = async () => {
         try {
-            const data = await rouletteService.getSpinLogs();
+            const data = await rouletteService.getSpinLogs(startDate, endDate);
             setLogs(data);
         } catch (error) {
             console.error('Error loading logs:', error);
@@ -146,6 +154,13 @@ const SpinLogsScreen = ({ navigation }) => {
                 </TouchableOpacity>
                 <Text style={styles.title}>Historial de Giros</Text>
             </View>
+
+            <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+            />
 
             {/* Search */}
             <View style={styles.searchContainer}>

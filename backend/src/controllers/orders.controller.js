@@ -10,7 +10,7 @@ async function getAllOrders(req, res) {
   try {
 
 
-    let { userId, status } = req.query;
+    let { userId, status, startDate, endDate } = req.query;
     const isAdmin = req.user?.role === 'admin';
 
     const conditions = [];
@@ -31,6 +31,19 @@ async function getAllOrders(req, res) {
     if (status && ['pending', 'completed', 'cancelled'].includes(status)) {
       conditions.push(`o.status = $${idx}`);
       params.push(status);
+      idx++;
+    }
+
+    // Date filtering
+    if (startDate) {
+      conditions.push(`o.order_date >= $${idx}::date`);
+      params.push(startDate);
+      idx++;
+    }
+
+    if (endDate) {
+      conditions.push(`o.order_date < ($${idx}::date + interval '1 day')`);
+      params.push(endDate);
       idx++;
     }
 
@@ -303,6 +316,20 @@ async function createOrder(req, res) {
       });
     }
 
+    // Log order creation
+    try {
+      const customerInfo = await client.query('SELECT name FROM users WHERE id = $1', [user_id]);
+      const customerName = customerInfo.rows[0]?.name || 'Cliente';
+
+      await client.query(
+        `INSERT INTO order_creation_logs (order_id, customer_id, customer_name, total_amount, items_count, created_by, created_by_name, created_by_role, log_date)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)`,
+        [orderId, user_id, customerName, totalAmount, items.length, req.user.id, req.user.name, req.user.role]
+      );
+    } catch (logError) {
+      console.error('Error recording order creation log:', logError);
+    }
+
     await client.query('COMMIT');
 
     return res.status(201).json({
@@ -334,6 +361,18 @@ async function updateOrderStatus(req, res) {
       });
     }
 
+    // Get current status before update
+    const currentOrder = await db.query(
+      'SELECT status FROM orders WHERE id = $1',
+      [id]
+    );
+
+    if (currentOrder.rowCount === 0) {
+      return res.status(404).json({ message: 'Pedido no encontrado' });
+    }
+
+    const oldStatus = currentOrder.rows[0].status;
+
     const result = await db.query(
       `
       UPDATE orders
@@ -345,11 +384,18 @@ async function updateOrderStatus(req, res) {
       [status, id]
     );
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Pedido no encontrado' });
-    }
-
     const updatedOrder = result.rows[0];
+
+    // Log status change
+    try {
+      await db.query(
+        `INSERT INTO order_status_logs (order_id, old_status, new_status, changed_by, changed_by_name, changed_by_role, log_date)
+         VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)`,
+        [id, oldStatus, status, req.user.id, req.user.name, req.user.role]
+      );
+    } catch (logError) {
+      console.error('Error recording order status log:', logError);
+    }
 
     // Si el pedido se completó, actualizamos el resumen diario
     if (status === 'completed') {

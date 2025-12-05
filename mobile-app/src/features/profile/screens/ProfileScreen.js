@@ -131,6 +131,89 @@ const ProfileScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
+                {/* Logs Section - Admin Only */}
+                {isAdmin() && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Logs del Sistema</Text>
+
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => navigation.navigate('GrantHistory')}
+                        >
+                            <View style={styles.menuItemContent}>
+                                <Text style={styles.menuItemIcon}>📊</Text>
+                                <Text style={styles.menuItemText}>Historial de Giros Otorgados</Text>
+                            </View>
+                            <Text style={styles.chevron}>›</Text>
+                        </TouchableOpacity>
+
+                        <View style={{ height: 12 }} />
+
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => navigation.navigate('SpinLogs')}
+                        >
+                            <View style={styles.menuItemContent}>
+                                <Text style={styles.menuItemIcon}>📋</Text>
+                                <Text style={styles.menuItemText}>Logs de Ruleta</Text>
+                            </View>
+                            <Text style={styles.chevron}>›</Text>
+                        </TouchableOpacity>
+
+                        <View style={{ height: 12 }} />
+
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => navigation.navigate('LoginLogs')}
+                        >
+                            <View style={styles.menuItemContent}>
+                                <Text style={styles.menuItemIcon}>🔐</Text>
+                                <Text style={styles.menuItemText}>Logs de Login</Text>
+                            </View>
+                            <Text style={styles.chevron}>›</Text>
+                        </TouchableOpacity>
+
+                        <View style={{ height: 12 }} />
+
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => navigation.navigate('CustomerLogs')}
+                        >
+                            <View style={styles.menuItemContent}>
+                                <Text style={styles.menuItemIcon}>👥</Text>
+                                <Text style={styles.menuItemText}>Gestión de Clientes</Text>
+                            </View>
+                            <Text style={styles.chevron}>›</Text>
+                        </TouchableOpacity>
+
+                        <View style={{ height: 12 }} />
+
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => navigation.navigate('OrderStatusLogs')}
+                        >
+                            <View style={styles.menuItemContent}>
+                                <Text style={styles.menuItemIcon}>📦</Text>
+                                <Text style={styles.menuItemText}>Cambios de Estado</Text>
+                            </View>
+                            <Text style={styles.chevron}>›</Text>
+                        </TouchableOpacity>
+
+                        <View style={{ height: 12 }} />
+
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => navigation.navigate('OrderCreationLogs')}
+                        >
+                            <View style={styles.menuItemContent}>
+                                <Text style={styles.menuItemIcon}>📝</Text>
+                                <Text style={styles.menuItemText}>Creación de Pedidos</Text>
+                            </View>
+                            <Text style={styles.chevron}>›</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
                 {/* Settings Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Configuración</Text>
